@@ -8,22 +8,8 @@ interface Props {
 
 export function StartScreen({ onStart }: Props) {
   const [level, setLevel] = useState<Level>('easy')
-  const [countdown, setCountdown] = useState<number | null>(null)
-
   const handleStart = () => {
-    setCountdown(3)
-    let count = 3
-    const iv = setInterval(() => {
-      count--
-      if (count > 0) {
-        setCountdown(count)
-      } else if (count === 0) {
-        setCountdown('GO' as any)
-      } else {
-        clearInterval(iv)
-        onStart(level)
-      }
-    }, 1000)
+    onStart(level)
   }
 
   return (
@@ -58,13 +44,6 @@ export function StartScreen({ onStart }: Props) {
         START
       </button>
 
-      {countdown !== null && (
-        <div className="fixed inset-0 bg-white bg-opacity-90 flex items-center justify-center z-50">
-          <div className="text-9xl font-black text-orange-500 animate-pulse">
-            {countdown}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
