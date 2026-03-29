@@ -13,7 +13,7 @@ export function StartScreen({ onStart }: Props) {
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 min-h-screen flex flex-col items-center justify-center relative">
+    <div className="max-w-lg mx-auto px-4 min-h-screen flex flex-col items-center py-12 relative overflow-y-auto w-full">
       <div className="text-8xl animate-bounce mb-6">🏆</div>
       <h1 className="text-4xl sm:text-5xl font-black text-orange-500 mb-2 text-center">Konkurs Matematyczny</h1>
       <p className="text-gray-500 font-bold mb-8">10 pytań • licznik czasu • ocena</p>
