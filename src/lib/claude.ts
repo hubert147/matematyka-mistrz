@@ -9,34 +9,94 @@ export async function generateQuestions(level: Level): Promise<Question[]> {
     hard:   'tabliczka mnożenia do 10x10, brakujący czynnik (? x 6 = 42), wzorce liczbowe, zadania tekstowe wielokrokowe',
   }[level]
 
-  const prompt = `Wygeneruj dokładnie 10 pytań matematycznych dla dziecka 6-8 lat, poziom: ${level}.
-Zakres: ${levelDesc}.
+  const prompt = `Jesteś generatorem pytań matematycznych dla dzieci 6-8 lat. Twoim jedynym zadaniem jest zwrócenie poprawnego JSON z 10 pytaniami. Nic więcej.
 
-WAŻNE — pytania muszą być PROGRESYWNE (każde następne trudniejsze):
-- Pytania 1-3: difficulty 1 (najprostsze z zakresu)
-- Pytania 4-7: difficulty 2 (średnie)
-- Pytania 8-10: difficulty 3 (najtrudniejsze z zakresu)
+POZIOM: ${level}
+ZAKRES: ${levelDesc}
 
-Zwróć TYLKO poprawny JSON (bez markdown, bez komentarzy) w formacie:
+## STRUKTURA PROGRESJI (OBOWIĄZKOWA)
+
+Pytania 1-3 → difficulty: 1 (najprostsze w zakresie, małe liczby, oczywisty kontekst)
+Pytania 4-7 → difficulty: 2 (średnie, nieco większe liczby, jeden krok myślenia)
+Pytania 8-10 → difficulty: 3 (najtrudniejsze w zakresie, większe liczby lub wielokrok)
+
+## ZASADY OBLICZEŃ — KRYTYCZNE
+
+Przed zapisaniem każdego pytania wykonaj następujące kroki:
+1. Oblicz wynik ręcznie: zapisz działanie i wynik
+2. Sprawdź drugi raz: potwierdź że wynik się zgadza
+3. Sprawdź opts: upewnij się że "correct" jest IDENTYCZNE z jednym z czterech opts (ten sam string, ta sama liczba)
+4. Sprawdź dystraktorzy: pozostałe 3 opcje muszą być BŁĘDNE ale WIARYGODNE (różnią się o 1-3 od poprawnej)
+
+Przykład weryfikacji:
+- Działanie: 7 × 8
+- Krok 1: 7×8 = 56 ✓
+- Krok 2: 8×7 = 56 ✓ (przemienność)
+- correct: "56"
+- opts: ["54", "56", "58", "63"] ✓ (56 jest w liście, pozostałe błędne)
+
+## FORMAT WYJŚCIOWY
+
+Zwróć WYŁĄCZNIE tablicę JSON. Zero tekstu przed, zero tekstu po, zero markdown, zero komentarzy.
+Pierwszym znakiem odpowiedzi musi być "[", ostatnim "]".
+
 [
   {
     "id": "q1",
     "q": "3 + 4 = ?",
     "opts": ["5", "6", "7", "8"],
     "correct": "7",
-    "explanation": "3 plus 4 to 7, liczymy dalej od 3: cztery kroki to 4,5,6,7",
+    "explanation": "Liczymy dalej od 3, robiąc cztery kroki: 4, 5, 6, 7 — i już mamy wynik!",
     "category": "Dodawanie",
     "difficulty": 1
   }
 ]
 
-Zasady:
-- opts: zawsze dokładnie 4 elementy jako stringi, poprawna odpowiedź ukryta losowo wśród opcji
-- correct: musi być identyczne z jednym z opts
-- explanation: proste, ciepłe wyjaśnienie dla dziecka (1-2 zdania), jak dojść do odpowiedzi
-- category: jedna z: Dodawanie, Odejmowanie, Mnożenie, Liczenie, Porównywanie, Figury, Zadanie, Wzorzec, Brakujący czynnik
-- Dla zadań tekstowych używaj ciekawych kontekstów: jabłka, pająki, pizze, rowery, kaczki, ciastka
-- NIE powtarzaj tych samych liczb w kolejnych pytaniach`
+## REGUŁY KAŻDEGO POLA
+
+"id" → "q1" do "q10" — kolejno, bez przerw
+
+"q" → treść pytania, max 12 słów
+  - Działania zapisuj jako: 7 + 3 = ?, 5 × 4 = ?, 15 - 8 = ?
+  - Brakujący czynnik: ? × 6 = 42
+  - Zadanie tekstowe: max 2 zdania, konkretne liczby
+  - NIE używaj znaków specjalnych ani emoji w pytaniu
+
+"opts" → dokładnie 4 stringi
+  - Poprawna odpowiedź ukryta na losowej pozycji (nie zawsze pierwsza lub ostatnia)
+  - Dystraktorzy: liczby bliskie wyniku (±1, ±2, ±3), NIGDY ujemne dla tego wieku
+  - Wszystkie 4 opcje muszą być różne od siebie
+  - Dla pytań słownych ("które większe?") opts to np. ["3", "7", "są równe", "nie wiem"]
+
+"correct" → musi być IDENTYCZNYM STRINGIEM z jednego z opts, znak po znaku
+
+"explanation" → 1-2 zdania, ciepły ton Pani Sowy, konkretny sposób dojścia do wyniku
+  - Używaj obrazów z życia: jabłka, palce, czekoladki, kaczki, kroki
+  - Przykład dobry: "Wyobraź sobie 6 pudełek z 7 czekoladkami — razem masz 42 słodkości!"
+  - Przykład zły: "Odpowiedź to 42" (za mało, nie tłumaczy)
+
+"category" → TYLKO jedna z: Dodawanie, Odejmowanie, Mnożenie, Liczenie, Porównywanie, Figury, Zadanie, Wzorzec, Brakujący czynnik
+
+"difficulty" → liczba 1, 2 lub 3 (nie string)
+
+## RÓŻNORODNOŚĆ — OBOWIĄZKOWA
+
+- Żadne dwie liczby nie mogą się powtarzać jako główne operandy (np. nie dwa pytania z "7 × 8")
+- Maksymalnie 3 pytania z tej samej kategorii
+- Zadania tekstowe: każde z innym kontekstem (np. jedno o jabłkach, drugie o pająkach)
+- Opcje odpowiedzi: poprawna na pozycji 1 max 2 razy, na pozycji 2 max 3 razy, itd. — rozkład losowy
+
+## SAMOKONTROLA PRZED ZWRÓCENIEM
+
+Zanim zwrócisz JSON, sprawdź mentalnie każde pytanie według listy:
+□ Czy wynik jest matematycznie poprawny?
+□ Czy "correct" jest identyczne z jednym z "opts"?
+□ Czy wszystkie 4 opts są różne od siebie?
+□ Czy difficulty rośnie (1,1,1,2,2,2,2,3,3,3)?
+□ Czy JSON jest syntaktycznie poprawny (wszystkie nawiasy zamknięte, przecinki na miejscu)?
+□ Czy odpowiedź zaczyna się od "[" i kończy na "]"?
+
+Jeśli którakolwiek odpowiedź brzmi "nie" — popraw przed zwróceniem.`
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
