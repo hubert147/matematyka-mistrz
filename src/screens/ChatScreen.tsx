@@ -27,7 +27,10 @@ export function ChatScreen({ onBack }: Props) {
 
   // Play audio when a new assistant message arrives
   const playAudio = (text: string) => {
-    const speech = new SpeechSynthesisUtterance(text)
+    // Usuń wszystkie emotikony, żeby systemowy lektor ich nie czytał (np. "sowa buźka")
+    const cleanedText = text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '')
+    
+    const speech = new SpeechSynthesisUtterance(cleanedText)
     speech.lang = 'pl-PL'
     speech.rate = 0.95
     speech.pitch = 1.3

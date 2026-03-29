@@ -109,7 +109,8 @@ export function TutorScreen({ onBack }: Props) {
           <div className="flex flex-col gap-4">
             <button
               onClick={() => {
-                const speech = new SpeechSynthesisUtterance(explanation)
+                const cleanedText = explanation.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '')
+                const speech = new SpeechSynthesisUtterance(cleanedText)
                 speech.lang = 'pl-PL'
                 
                 // Ciepły, młodszy, "sowi" ptasi wydźwięk - trochę wyżej, odrobinkę wolniej
