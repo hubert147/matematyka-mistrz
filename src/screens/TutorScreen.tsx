@@ -15,7 +15,8 @@ export function TutorScreen({ onBack }: Props) {
   const [questions, setQuestions] = useState<Question[]>([])
   const [score, setScore] = useState<number>(0)
   
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -145,21 +146,36 @@ export function TutorScreen({ onBack }: Props) {
           wytłumaczy Ci materiał prosto i cieplutko, a na koniec da parę pytań testowych!
         </p>
         
-        <input 
-          type="file" 
-          accept="image/*" 
-          capture="environment" 
-          ref={fileInputRef}
-          onChange={handleImageUpload}
-          className="hidden" 
-        />
-        
-        <button 
-          onClick={() => fileInputRef.current?.click()}
-          className="bg-purple-500 hover:bg-purple-600 text-white w-full py-5 rounded-2xl font-black text-2xl transition-all shadow-md transform hover:scale-[1.02]"
-        >
-          📷 Zrób zdjęcie książki
-        </button>
+        <div className="flex flex-col sm:flex-row gap-4 w-full mt-4">
+          <input 
+            type="file" 
+            accept="image/*" 
+            capture="environment" 
+            ref={cameraInputRef}
+            onChange={handleImageUpload}
+            className="hidden" 
+          />
+          <input 
+            type="file" 
+            accept="image/*" 
+            ref={galleryInputRef}
+            onChange={handleImageUpload}
+            className="hidden" 
+          />
+          
+          <button 
+            onClick={() => cameraInputRef.current?.click()}
+            className="bg-purple-500 hover:bg-purple-600 text-white flex-1 py-5 rounded-2xl font-black text-xl transition-all shadow-md transform hover:scale-[1.02] flex items-center justify-center gap-2"
+          >
+            <span>📷</span> Zrób zdjęcie
+          </button>
+          <button 
+            onClick={() => galleryInputRef.current?.click()}
+            className="bg-indigo-500 hover:bg-indigo-600 text-white flex-1 py-5 rounded-2xl font-black text-xl transition-all shadow-md transform hover:scale-[1.02] flex items-center justify-center gap-2"
+          >
+            <span>📂</span> Dodaj z dysku
+          </button>
+        </div>
       </div>
     </div>
   )
