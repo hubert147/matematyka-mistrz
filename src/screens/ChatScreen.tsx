@@ -53,9 +53,9 @@ export function ChatScreen({ onBack }: Props) {
     window.speechSynthesis.speak(speech)
   }
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return
-    const newMessages: Message[] = [...messages, { role: 'user', content: input }]
+  const executeSend = async (textToSend: string) => {
+    if (!textToSend.trim() || isLoading) return
+    const newMessages: Message[] = [...messages, { role: 'user', content: textToSend }]
     setMessages(newMessages)
     setInput('')
     setIsLoading(true)
@@ -65,10 +65,14 @@ export function ChatScreen({ onBack }: Props) {
       setMessages([...newMessages, { role: 'assistant', content: resp }])
       playAudio(resp)
     } catch (e) {
-      setMessages([...newMessages, { role: 'assistant', content: "Uhu! Coś przerwało połączenie. Spróbuj powtórzyć pytanie." }])
+      setMessages([...newMessages, { role: 'assistant', content: "Uhu! Coś przerwało połączenie. Pokaż to rodzicom." }])
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleSend = () => {
+    executeSend(input)
   }
 
   const handleRecord = () => {
@@ -83,10 +87,12 @@ export function ChatScreen({ onBack }: Props) {
     recognition.interimResults = false
     recognition.maxAlternatives = 1
 
+    let finalTranscript = ''
+
     recognition.onstart = () => setIsRecording(true)
     recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript
-      setInput(prev => prev ? prev + ' ' + transcript : transcript)
+      finalTranscript = event.results[0][0].transcript
+      setInput(prev => prev ? prev + ' ' + finalTranscript : finalTranscript)
     }
     recognition.onerror = (event: any) => {
       console.error(event.error)
@@ -94,7 +100,9 @@ export function ChatScreen({ onBack }: Props) {
     }
     recognition.onend = () => {
       setIsRecording(false)
-      // Opcjonalnie: można tutaj automatycznie odpalać `handleSend()`, ale dajmy dziecku szansę zaakceptować wiadomość
+      if (finalTranscript) {
+        executeSend(finalTranscript)
+      }
     }
 
     recognition.start()
