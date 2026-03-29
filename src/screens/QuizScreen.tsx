@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import type { Question, Answer } from '../types'
 import { useQuiz } from '../hooks/useQuiz'
 
@@ -10,6 +11,14 @@ interface Props {
 
 export function QuizScreen({ questions, formattedTime, isUrgent, onComplete }: Props) {
   const { currentIndex, currentQuestion, isAnswered, selectedAnswer, submitAnswer } = useQuiz(questions, onComplete)
+  const [owlPos, setOwlPos] = useState<'left' | 'right' | 'top' | 'bottom'>('bottom')
+
+  useEffect(() => {
+    if (isAnswered) {
+      const positions = ['left', 'right', 'top', 'bottom'] as const
+      setOwlPos(positions[Math.floor(Math.random() * positions.length)])
+    }
+  }, [isAnswered, currentIndex])
 
   if (!currentQuestion) return null
 
@@ -29,8 +38,28 @@ export function QuizScreen({ questions, formattedTime, isUrgent, onComplete }: P
 
   const progress = ((currentIndex) / questions.length) * 100
 
+  const getOwlClasses = () => {
+    const base = "fixed text-[7rem] md:text-[9rem] z-50 transition-all duration-[600ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] drop-shadow-2xl"
+    if (!isAnswered) {
+      switch (owlPos) {
+        case 'left': return `${base} top-1/3 -left-48 -rotate-90 opacity-0`
+        case 'right': return `${base} top-1/3 -right-48 rotate-90 opacity-0`
+        case 'top': return `${base} -top-48 left-1/2 -translate-x-1/2 rotate-180 opacity-0`
+        case 'bottom': return `${base} -bottom-48 left-1/2 -translate-x-1/2 opacity-0`
+      }
+    } else {
+      switch (owlPos) {
+        case 'left': return `${base} top-1/3 left-0 md:left-8 rotate-12 opacity-100`
+        case 'right': return `${base} top-1/3 right-0 md:right-8 -rotate-12 opacity-100`
+        case 'top': return `${base} top-2 left-1/2 -translate-x-1/2 opacity-100`
+        case 'bottom': return `${base} bottom-32 left-1/2 -translate-x-1/2 opacity-100`
+      }
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-[#FFF9F0] flex flex-col items-center pt-8 px-4 relative">
+    <div className="min-h-screen bg-[#FFF9F0] flex flex-col items-center pt-8 px-4 relative overflow-hidden">
+      <div className={getOwlClasses()}>🦉</div>
       <div className="w-full max-w-lg sticky top-0 bg-white/80 backdrop-blur-md z-10 p-4 rounded-3xl shadow-sm mb-6 flex flex-col gap-2">
         <div className="flex justify-between items-center w-full">
           <span className="font-bold text-gray-700">Pytanie {currentIndex + 1}/10</span>
