@@ -1,7 +1,14 @@
 import { useState, useRef } from 'react'
 import type { Question, Answer } from '../types'
 
-export function useQuiz(questions: Question[], onComplete: (answers: Answer[]) => void) {
+export function useQuiz(initialQuestions: Question[], onComplete: (answers: Answer[]) => void) {
+  const [questions] = useState<Question[]>(() => {
+    return initialQuestions.map(q => ({
+      ...q,
+      opts: [...q.opts].sort(() => Math.random() - 0.5)
+    }))
+  })
+
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<Answer[]>([])
   const [isAnswered, setIsAnswered] = useState(false)
