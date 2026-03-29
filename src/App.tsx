@@ -4,12 +4,14 @@ import { StartScreen } from './screens/StartScreen'
 import { LoadingScreen } from './screens/LoadingScreen'
 import { QuizScreen } from './screens/QuizScreen'
 import { ResultsScreen } from './screens/ResultsScreen'
+import { MainScreen } from './screens/MainScreen'
+import { TutorScreen } from './screens/TutorScreen'
 import { generateQuestions, generateReview } from './lib/claude'
 import { useTimer } from './hooks/useTimer'
 import { useHistory } from './hooks/useHistory'
 
 export default function App() {
-  const [screen, setScreen] = useState<'start' | 'loading_q' | 'quiz' | 'loading_r' | 'results'>('start')
+  const [screen, setScreen] = useState<'main' | 'start' | 'loading_q' | 'quiz' | 'loading_r' | 'results' | 'tutor'>('main')
   const [level, setLevel] = useState<Level>('easy')
   const [questions, setQuestions] = useState<Question[]>([])
   const [session, setSession] = useState<QuizSession | null>(null)
@@ -74,12 +76,14 @@ export default function App() {
     timer.reset()
     setSession(null)
     setQuestions([])
-    setScreen('start')
+    setScreen('main')
   }
 
   return (
     <div className="font-sans antialiased text-gray-900 bg-[#FFF9F0] min-h-screen">
-      {screen === 'start' && <StartScreen onStart={handleStart} />}
+      {screen === 'main' && <MainScreen onSelectQuiz={() => setScreen('start')} onSelectTutor={() => setScreen('tutor')} />}
+      {screen === 'tutor' && <TutorScreen onBack={() => setScreen('main')} />}
+      {screen === 'start' && <StartScreen onStart={handleStart} onBack={() => setScreen('main')} />}
       {screen === 'loading_q' && <LoadingScreen message="Pani Sowa przygotowuje pytania..." />}
       {screen === 'loading_r' && <LoadingScreen message="Pani Sowa analizuje Twoje wyniki..." />}
       {screen === 'quiz' && (

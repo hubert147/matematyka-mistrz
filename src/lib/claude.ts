@@ -122,3 +122,90 @@ Używaj prostych słów. Nie używaj trudnych terminów matematycznych.`
   const data = await res.json()
   return data.content?.[0]?.text || 'Dobra robota! Ćwicz dalej!'
 }
+
+export async function analyzeTutorImage(
+  base64Image: string
+): Promise<{ explanation: string; questions: Question[] }> {
+  // Strip out the data:image prefix to get just the base64 string
+  const base64Data = base64Image.split(',')[1] || base64Image
+  const mimeType = base64Image.split(';')[0].split(':')[1] || 'image/jpeg'
+
+  const prompt = `Jesteś Panią Sową - ciepłą i doświadczoną edukatorką wczesnoszkolną (dzieci 6-8 lat).
+Dostajesz zdjęcie zadania domowego dziecka, kawałka ćwiczeń lub książki.
+Twoim głównym zadaniem jest WYTŁUMACZENIE dziecku co jest na zdjęciu i o co w nim chodzi.
+Kategorycznie ZAKAZUJĘ podawania gotowych rozwiązań do niezrobionych zadań na zdjęciu. Masz pomóc dziecku do nich dojść krok po kroku.
+
+Wymagany format JSON z dokładnie dwoma kluczami (bez znaczników markdown, czysty JSON):
+{
+  "explanation": "Twój ciepły komentarz jako Pani Sowa. Wyjaśnienie koncepcji. Minimum 3 zdania, maksimum 6.",
+  "questions": [
+    {
+      "id": "t1",
+      "q": "Pytanie sprawdzające wygenerowane na podstawie zdjęcia. Np. Ile skrzydeł mają 3 kaczki?",
+      "opts": ["A", "B", "C", "D"],
+      "correct": "Poprawna odpowiedz pasujaca 1:1 do stringa z opts",
+      "explanation": "Wyjaśnienie odpowiedzi po wybraniu błędnej",
+      "category": "Temat ze zdjęcia",
+      "difficulty": 1
+    }
+  ]
+}
+
+- Zwróć od 2 do 3 pytań "questions" z options.
+- Jeśli zdjęcie nie dotyczy matematyki/nauki przekaż dziecku w "explanation", że Sowa chętnie porozmawia, ale tu uczy matematyki, i daj 1 łatwe, całkowicie standardowe, matematyczne pytanie.`
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': API_KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 2000,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: mimeType,
+                data: base64Data,
+              },
+            },
+            {
+              type: 'text',
+              text: prompt,
+            },
+          ],
+        },
+      ],
+    }),
+  })
+
+  if (!res.ok) {
+    const err = await res.text()
+    console.error('Claude Vision API Error:', err)
+    throw new Error('Błąd odczytu obrazu')
+  }
+
+  const data = await res.json()
+  const text = data.content?.[0]?.text || ''
+
+  try {
+    const match = text.match(/\{[\s\S]*\}/)
+    if (!match) throw new Error()
+    const parsed = JSON.parse(match[0])
+    return {
+      explanation: parsed.explanation || 'Niestety, nie potrafię tego wyjaśnić.',
+      questions: Array.isArray(parsed.questions) ? parsed.questions : []
+    }
+  } catch (e) {
+    console.error('JSON parsing failed:', text)
+    throw new Error('Claude zwrócił niepoprawny format')
+  }
+}

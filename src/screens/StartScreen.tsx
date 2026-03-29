@@ -4,9 +4,10 @@ import { LEVEL_CONFIG } from '../constants'
 
 interface Props {
   onStart: (level: Level) => void
+  onBack?: () => void
 }
 
-export function StartScreen({ onStart }: Props) {
+export function StartScreen({ onStart, onBack }: Props) {
   const [level, setLevel] = useState<Level>('easy')
   const handleStart = () => {
     onStart(level)
@@ -14,7 +15,11 @@ export function StartScreen({ onStart }: Props) {
 
   return (
     <div className="max-w-lg mx-auto px-4 min-h-screen flex flex-col items-center py-12 relative overflow-y-auto w-full">
-      <div className="text-8xl animate-bounce mb-6">🏆</div>
+      <div className="w-full flex justify-between items-center mb-6">
+        {onBack ? <button onClick={onBack} className="text-4xl hover:scale-110 transition-transform">⬅️</button> : <div></div>}
+        <div className="text-8xl animate-bounce">🏆</div>
+        <div className="w-10"></div>
+      </div>
       <h1 className="text-4xl sm:text-5xl font-black text-orange-500 mb-2 text-center">Konkurs Matematyczny</h1>
       <p className="text-gray-500 font-bold mb-8">10 pytań • licznik czasu • ocena</p>
 
