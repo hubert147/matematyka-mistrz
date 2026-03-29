@@ -34,14 +34,14 @@ export function ResultsScreen({ session, onRestart }: Props) {
     return () => clearInterval(iv)
   }, [session.score])
 
-  const stars = session.score >= 8 ? 3 : session.score >= 5 ? 2 : 1
+  const stars = session.score >= 9 ? 5 : session.score >= 7 ? 4 : session.score >= 5 ? 3 : session.score >= 3 ? 2 : 1
   const color = session.score >= 8 ? 'text-green-500' : session.score >= 5 ? 'text-orange-500' : 'text-red-500'
 
   return (
     <div className="max-w-lg mx-auto px-4 py-8 min-h-screen relative bg-[#FFF9F0]">
       <div className="text-center bg-white p-8 rounded-3xl shadow-sm mb-6 mt-8">
         <div className="text-6xl text-yellow-400 mb-4 flex justify-center gap-1">
-          {Array.from({ length: 3 }).map((_, i) => (
+          {Array.from({ length: 5 }).map((_, i) => (
             <span key={i} className={i < stars ? 'opacity-100 drop-shadow-md pb-4' : 'opacity-20 grayscale pb-4'}>★</span>
           ))}
         </div>

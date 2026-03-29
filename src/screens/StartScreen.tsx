@@ -16,7 +16,7 @@ export function StartScreen({ onStart }: Props) {
     <div className="max-w-lg mx-auto px-4 min-h-screen flex flex-col items-center justify-center relative">
       <div className="text-8xl animate-bounce mb-6">🏆</div>
       <h1 className="text-4xl sm:text-5xl font-black text-orange-500 mb-2 text-center">Konkurs Matematyczny</h1>
-      <p className="text-gray-500 font-bold mb-8">10 pytań • licznik czasu • ocena AI</p>
+      <p className="text-gray-500 font-bold mb-8">10 pytań • licznik czasu • ocena</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full mb-8">
         {(Object.entries(LEVEL_CONFIG) as [Level, typeof LEVEL_CONFIG[Level]][]).map(([key, config]) => (
