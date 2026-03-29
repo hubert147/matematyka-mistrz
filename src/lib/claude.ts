@@ -209,3 +209,42 @@ Wymagany format JSON z dokładnie dwoma kluczami (bez znaczników markdown, czys
     throw new Error('Claude zwrócił niepoprawny format')
   }
 }
+
+export async function sendChatMessage(
+  messages: { role: 'user' | 'assistant'; content: string }[]
+): Promise<string> {
+  const systemPrompt = `Jesteś Panią Sową – edukatorką i asystentką dla 6-8 latków (w szczególności 7-letniej Mai).
+Twoim zadaniem jest wspierać dziecko w nauce. Pisz CIEPŁO i KRÓTKO (odpowiadaj max do 3-4 zdań tekstowych, aby dziecko nie musiało za długo słuchać). 
+Reagujesz WYŁĄCZNIE na tematy: szkoła, matematyka, biologia, przyroda, kosmos, zjawiska, litery, historia, pomoc w lekcjach i przyjazne pogawędki o zainteresowaniach. 
+
+ABSOLUTNE RESTRYKCJE: 
+1. Żadnych rozmów o strzelankach, przemocy, grach komputerowych czy serialach dla dorosłych.
+2. Jeśli dziecko próbuje skierować rozmowę na tematy głupie lub gry, grzecznie powiedz: "Uhu, uhu! Sowy takie jak ja znają się przeważnie na tajemnicach przyrody i matematyki! Może policzymy razem gwiazdy na niebie, albo porozmawiamy o zwierzątkach?"
+3. Nie podawaj gotowych wyników skomplikowanych zadań domowych - naprowadzaj krokami.
+4. Mów prostym, zachęcającym językiem. Naśladuj odgłos sowy (Uhu!) od czasu do czasu.`
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': API_KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 300,
+      system: systemPrompt,
+      messages: messages,
+    }),
+  })
+
+  if (!res.ok) {
+    const err = await res.text()
+    console.error('Claude Chat API Error:', err)
+    throw new Error('Błąd komunikacji z Sową')
+  }
+
+  const data = await res.json()
+  return data.content?.[0]?.text || 'Sowa chwilowo przysnęła na gałęzi. Uhu!'
+}
