@@ -72,6 +72,7 @@ export function LiterQuizScreen({ level, focusType, onComplete, onBack }: Props)
 
         {currentQuestion.type === 'syllable' && (
           <SyllableTask 
+            key={currentQuestion.id}
             question={currentQuestion}
             onAnswer={(ok) => submitAnswer({ correct: ok })}
             isAnswered={isAnswered}
@@ -81,6 +82,7 @@ export function LiterQuizScreen({ level, focusType, onComplete, onBack }: Props)
 
         {currentQuestion.type === 'draw' && (
           <DrawTask 
+            key={currentQuestion.id}
             question={currentQuestion}
             onAnswer={(ok) => submitAnswer({ correct: ok })}
             isAnswered={isAnswered}
