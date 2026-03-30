@@ -43,15 +43,24 @@ export async function speak(text: string): Promise<void> {
       }
     )
 
-    if (!res.ok) throw new Error(`Azure TTS Error: ${res.status}`)
+    if (!res.ok) {
+      const errBody = await res.text()
+      console.error(`Azure TTS API Error [${res.status}]:`, errBody)
+      throw new Error(`Azure TTS Error: ${res.status}`)
+    }
 
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)
     audioCache[text] = url // Zapisz w cache sesyjnym
     
+    console.log('Azure TTS: Audio wygenerowane pomyślnie.')
     const audio = new Audio(url)
     await audio.play()
   } catch (e) {
-    console.error('Błąd Azure TTS:', e)
+    console.error('Błąd Azure TTS (przełączam na fallback):', e)
+    // Fallback do systemowego syntezatora
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = 'pl-PL'
+    window.speechSynthesis.speak(utterance)
   }
 }
