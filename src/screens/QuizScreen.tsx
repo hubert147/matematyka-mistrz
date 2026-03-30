@@ -10,7 +10,7 @@ interface Props {
 }
 
 export function QuizScreen({ questions, formattedTime, isUrgent, onComplete }: Props) {
-  const { currentIndex, currentQuestion, isAnswered, selectedAnswer, submitAnswer } = useQuiz(questions, onComplete)
+  const { currentIndex, currentQuestion, isAnswered, selectedAnswer, submitAnswer, replayQuestion } = useQuiz(questions, onComplete)
   const [owlPos, setOwlPos] = useState<'left' | 'right' | 'top' | 'bottom'>('bottom')
 
   useEffect(() => {
@@ -77,9 +77,20 @@ export function QuizScreen({ questions, formattedTime, isUrgent, onComplete }: P
           {currentQuestion.category}
         </div>
         
-        <h2 className="text-3xl font-black text-gray-800 leading-snug mb-8 min-h-[4rem] flex items-center justify-center">
-          {currentQuestion.q}
-        </h2>
+        <div className="flex items-center justify-center gap-3 mb-8 min-h-[4rem]">
+          <h2 className="text-3xl font-black text-gray-800 leading-snug text-center">
+            {currentQuestion.q}
+          </h2>
+          {!isAnswered && (
+            <button
+              onClick={replayQuestion}
+              title="Odtwórz pytanie"
+              className="flex-shrink-0 w-11 h-11 rounded-full bg-orange-100 hover:bg-orange-200 text-orange-600 text-xl flex items-center justify-center transition-all active:scale-90"
+            >
+              🔊
+            </button>
+          )}
+        </div>
 
         <div className="grid grid-cols-2 gap-3 w-full">
           {currentQuestion.opts.map((opt, i) => (

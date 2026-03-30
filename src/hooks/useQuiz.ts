@@ -130,6 +130,10 @@ export function useQuiz(initialQuestions: Question[], onComplete: (answers: Answ
     return { isCorrect }
   }
 
+  const replayQuestion = () => {
+    if (currentQuestion) speakText(currentQuestion.q)
+  }
+
   return {
     currentIndex,
     currentQuestion,
@@ -137,6 +141,7 @@ export function useQuiz(initialQuestions: Question[], onComplete: (answers: Answ
     isAnswered,
     selectedAnswer,
     submitAnswer,
+    replayQuestion,
     isComplete,
     score
   }
