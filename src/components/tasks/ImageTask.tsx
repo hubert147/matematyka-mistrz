@@ -42,7 +42,12 @@ export function ImageTask({ question, onAnswer, isAnswered, chosen }: Props) {
 
       <p className="text-lg font-bold text-gray-700 text-center px-2">
         Na jaką literę zaczyna się{' '}
-        <span className="text-purple-600 text-2xl font-black">{word}</span>?
+        {isAnswered ? (
+          <span className="text-purple-600 text-2xl font-black">{word}</span>
+        ) : (
+          <span className="text-purple-400 text-2xl font-black">...</span>
+        )}
+        ?
       </p>
 
       <div className="grid grid-cols-2 gap-3 w-full">

@@ -5,9 +5,10 @@ interface Props {
   onSelectLiterQuiz: () => void
   onSelectTutor: () => void
   onSelectChat: () => void
+  onSelectStudy: () => void
 }
 
-export function MainScreen({ onSelectMathQuiz, onSelectLiterQuiz, onSelectTutor, onSelectChat }: Props) {
+export function MainScreen({ onSelectMathQuiz, onSelectLiterQuiz, onSelectTutor, onSelectChat, onSelectStudy }: Props) {
   const [showKonkursOptions, setShowKonkursOptions] = useState(false)
 
   return (
@@ -60,7 +61,7 @@ export function MainScreen({ onSelectMathQuiz, onSelectLiterQuiz, onSelectTutor,
 
         {/* NAUKA BOX */}
         <button 
-          onClick={() => alert('Moduł nauki już wkrótce! Ćwicz na razie w konkursach.')}
+          onClick={onSelectStudy}
           className="bg-white p-8 rounded-[2rem] shadow-sm border-4 border-green-100 hover:border-green-400 hover:shadow-lg transition-all flex flex-col items-center gap-4 group"
         >
           <div className="text-7xl group-hover:scale-110 transition-transform duration-300">📚</div>

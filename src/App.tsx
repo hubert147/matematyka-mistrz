@@ -8,21 +8,22 @@ import { ResultsScreen } from './screens/ResultsScreen'
 import { MainScreen } from './screens/MainScreen'
 import { TutorScreen } from './screens/TutorScreen'
 import { ChatScreen } from './screens/ChatScreen'
-
-// LiterMistrz Screens
 import { LiterStartScreen } from './screens/liter/LiterStartScreen'
 import { LiterQuizScreen } from './screens/liter/LiterQuizScreen'
 import { LiterResultsScreen } from './screens/liter/LiterResultsScreen'
+import { LiterStudySelectScreen } from './screens/liter/LiterStudySelectScreen'
 
 import { generateQuestions, generateReview, generateLiterReview } from './lib/claude'
 import { getQuestionsFromCache, saveQuestionsToCache } from './lib/questionsCache'
+import type { TaskType } from './types/liter'
 import { useTimer } from './hooks/useTimer'
 import { useHistory } from './hooks/useHistory'
 
 export default function App() {
-  const [screen, setScreen] = useState<'main' | 'start' | 'loading_q' | 'quiz' | 'loading_r' | 'results' | 'tutor' | 'chat' | 'liter_start' | 'liter_quiz' | 'liter_results' | 'liter_loading_r'>('main')
+  const [screen, setScreen] = useState<'main' | 'start' | 'loading_q' | 'quiz' | 'loading_r' | 'results' | 'tutor' | 'chat' | 'liter_start' | 'liter_quiz' | 'liter_results' | 'liter_loading_r' | 'liter_study_select'>('main')
   const [level, setLevel] = useState<Level>('easy')
   const [literLevel, setLiterLevel] = useState<LiterLevel>('easy')
+  const [focusType, setFocusType] = useState<TaskType | undefined>()
   
   const [questions, setQuestions] = useState<Question[]>([])
   const [session, setSession] = useState<QuizSession | null>(null)
@@ -97,6 +98,13 @@ export default function App() {
   // --- LITERKI ---
   const handleStartLiter = (lvl: LiterLevel) => {
     setLiterLevel(lvl)
+    setFocusType(undefined)
+    setScreen('liter_quiz')
+  }
+
+  const handleStartStudyLiter = (lvl: LiterLevel, type: TaskType) => {
+    setLiterLevel(lvl)
+    setFocusType(type)
     setScreen('liter_quiz')
   }
 
@@ -126,6 +134,7 @@ export default function App() {
           onSelectLiterQuiz={() => setScreen('liter_start')} 
           onSelectTutor={() => setScreen('tutor')} 
           onSelectChat={() => setScreen('chat')} 
+          onSelectStudy={() => setScreen('liter_study_select')}
         />
       )}
       
@@ -139,7 +148,8 @@ export default function App() {
       
       {/* LITERKI PKG */}
       {screen === 'liter_start' && <LiterStartScreen onStart={handleStartLiter} onBack={goToMain} />}
-      {screen === 'liter_quiz' && <LiterQuizScreen level={literLevel} onComplete={handleLiterComplete} onBack={goToMain} />}
+      {screen === 'liter_study_select' && <LiterStudySelectScreen onStart={handleStartStudyLiter} onBack={goToMain} />}
+      {screen === 'liter_quiz' && <LiterQuizScreen level={literLevel} focusType={focusType} onComplete={handleLiterComplete} onBack={goToMain} />}
       {screen === 'liter_results' && literSession && <LiterResultsScreen session={literSession} onRestart={goToMain} />}
 
       {/* LOADING STATES */}

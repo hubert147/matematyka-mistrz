@@ -38,8 +38,8 @@ function speakText(text: string) {
   })
 }
 
-export function useLiterQuiz(level: LiterLevel, onComplete: (answers: LiterAnswer[]) => void) {
-  const [schedule] = useState<TaskType[]>(() => generateSchedule(level))
+export function useLiterQuiz(level: LiterLevel, onComplete: (answers: LiterAnswer[]) => void, focusType?: TaskType) {
+  const [schedule] = useState<TaskType[]>(() => generateSchedule(level, focusType))
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<LiterAnswer[]>([])
   const [isAnswered, setIsAnswered] = useState(false)

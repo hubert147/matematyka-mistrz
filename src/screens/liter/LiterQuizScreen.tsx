@@ -1,4 +1,4 @@
-import type { LiterLevel, LiterAnswer } from '../../types/liter'
+import type { LiterLevel, LiterAnswer, TaskType } from '../../types/liter'
 import { useLiterQuiz } from '../../hooks/useLiterQuiz'
 import { ListenTask } from '../../components/tasks/ListenTask'
 import { ImageTask } from '../../components/tasks/ImageTask'
@@ -7,11 +7,12 @@ import { DrawTask } from '../../components/tasks/DrawTask'
 
 interface Props {
   level: LiterLevel
+  focusType?: TaskType
   onComplete: (answers: LiterAnswer[]) => void
   onBack: () => void
 }
 
-export function LiterQuizScreen({ level, onComplete, onBack }: Props) {
+export function LiterQuizScreen({ level, focusType, onComplete, onBack }: Props) {
   const { 
     currentIndex, 
     currentQuestion, 
@@ -21,7 +22,7 @@ export function LiterQuizScreen({ level, onComplete, onBack }: Props) {
     replayQuestion,
     score,
     total
-  } = useLiterQuiz(level, onComplete)
+  } = useLiterQuiz(level, onComplete, focusType)
 
   if (!currentQuestion) return null
 

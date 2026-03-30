@@ -129,8 +129,12 @@ export const LEVEL_CONFIG: Record<LiterLevel, {
 
 // ─── Generator harmonogramu zadań ─────────────────────────────────────────────
 
-/** Zwraca tablicę 10 typów zadań — losowy mix dostępnych typów dla poziomu */
-export function generateSchedule(level: LiterLevel): TaskType[] {
+/** Zwraca tablicę 10 typów zadań — losowy mix lub skupienie na jednym typie */
+export function generateSchedule(level: LiterLevel, focusType?: TaskType): TaskType[] {
+  if (focusType) {
+    return Array(10).fill(focusType)
+  }
+
   const types = LEVEL_CONFIG[level].taskTypes
   const n = types.length
   const total = 10
