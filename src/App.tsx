@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { Level, Question, Answer, QuizSession } from './types'
 import { StartScreen } from './screens/StartScreen'
 import { LoadingScreen } from './screens/LoadingScreen'
@@ -18,6 +18,31 @@ export default function App() {
   const [session, setSession] = useState<QuizSession | null>(null)
   const timer = useTimer()
   const history = useHistory()
+
+  // --- Android Back Button Support ---
+  // Gdy przechodzimy na nowy ekran (nie 'main'), wpychamy dummy state do historii przegladarki.
+  // Klikniecie wstecz na Androidzie odpala popstate — lapiem to i wracamy do menu.
+  const goToMain = useCallback(() => {
+    timer.reset()
+    setSession(null)
+    setQuestions([])
+    setScreen('main')
+  }, [timer])
+
+  useEffect(() => {
+    if (screen !== 'main') {
+      window.history.pushState({ screen }, '', window.location.href)
+    }
+  }, [screen])
+
+  useEffect(() => {
+    const handlePopState = () => {
+      // Zawsze wracamy do menu glownego gdy uzytkownik wcisnie wstecz
+      goToMain()
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [goToMain])
 
   const handleStart = async (lvl: Level) => {
     setLevel(lvl)
@@ -74,10 +99,7 @@ export default function App() {
   }
 
   const handleRestart = () => {
-    timer.reset()
-    setSession(null)
-    setQuestions([])
-    setScreen('main')
+    goToMain()
   }
 
   return (
