@@ -107,7 +107,7 @@ Jeśli którakolwiek odpowiedź brzmi "nie" — popraw przed zwróceniem.`
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 2000,
       messages: [{ role: 'user', content: prompt }],
     }),
@@ -173,7 +173,7 @@ Używaj prostych słów. Nie używaj trudnych terminów matematycznych.`
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 400,
       messages: [{ role: 'user', content: prompt }],
     }),
@@ -338,7 +338,7 @@ Używaj rotacyjnie: "Brawo!", "Rewelacja!", "Wiedziałam że dasz radę!", "To b
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 300,
       system: systemPrompt,
       messages: messages,
