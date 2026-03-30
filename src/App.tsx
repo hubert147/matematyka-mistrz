@@ -70,8 +70,9 @@ export default function App() {
       setQuestions(shuffled.slice(0, 10))
       timer.start()
       setScreen('quiz')
-    } catch (e) {
-      console.error(e)
+    } catch (e: any) {
+      console.error('Błąd startu matematyki:', e)
+      alert('Problem z Sową: ' + (e.message || 'Błąd API'))
       setScreen('start')
     }
   }

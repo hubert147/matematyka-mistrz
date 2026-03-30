@@ -27,32 +27,50 @@ ZASADY (krytyczne):
 - Maks. 3 pytania z tej samej kategorii w bloku 10`
 
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2000,
-      system: [
-        {
-          type: 'text',
-          text: prompt,
-          cache_control: { type: 'ephemeral' }
-        }
-      ],
-      messages: [{ role: 'user', content: `Generuj ${QUESTIONS_POOL_SIZE} pytań matematycznych.` }],
-    }),
-  })
+  let res;
+  try {
+    res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 4000,
+        system: [{ type: 'text', text: prompt, cache_control: { type: 'ephemeral' } }],
+        messages: [{ role: 'user', content: `Generuj ${QUESTIONS_POOL_SIZE} pytań matematycznych.` }],
+      }),
+    })
+  } catch (e) {
+    console.warn('Haiku 4.5 nie odpowiada, próba fallback na 3.5...')
+  }
+
+  // Fallback if 4.5 failed or returned error
+  if (!res || !res.ok) {
+     res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 4000,
+        system: [{ type: 'text', text: prompt }],
+        messages: [{ role: 'user', content: `Generuj ${QUESTIONS_POOL_SIZE} pytań matematycznych.` }],
+      }),
+    })
+  }
 
   if (!res.ok) {
     const err = await res.text()
-    console.error('Claude API Error:', err)
-    throw new Error('Błąd komunikacji z Claude API')
+    console.error('Pani Sowa Ma Problem (API Error):', err)
+    throw new Error('Błąd komunikacji z Claude API: ' + (res.status === 404 ? 'Model nie znaleziony' : res.status))
   }
 
   const data = await res.json()
