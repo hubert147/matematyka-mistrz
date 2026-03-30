@@ -1,4 +1,5 @@
 import type { Level, Question, Answer } from '../types'
+import type { LiterLevel, LiterAnswer } from '../types/liter'
 import { QUESTIONS_POOL_SIZE } from './questionsCache'
 
 const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY
@@ -10,96 +11,21 @@ export async function generateQuestions(level: Level): Promise<Question[]> {
     hard:   'tabliczka mnożenia do 10x10, brakujący czynnik (? x 6 = 42), wzorce liczbowe, zadania tekstowe wielokrokowe',
   }[level]
 
-  const prompt = `Jesteś generatorem pytań matematycznych dla dzieci 6-8 lat. Twoim jedynym zadaniem jest zwrócenie poprawnego JSON z 10 pytaniami. Nic więcej.
+  const prompt = `Jesteś generatorem pytań matematycznych dla dzieci 6-8 lat. Zwróć TYLKO tablicę JSON z ${QUESTIONS_POOL_SIZE} pytaniami. Zero tekstu poza JSON.
 
-POZIOM: ${level}
-ZAKRES: ${levelDesc}
+POZIOM: ${level} | ZAKRES: ${levelDesc}
 
-## STRUKTURA PROGRESJI (OBOWIĄZKOWA)
+Progresja trudności: pytania 1-10 difficulty:1, 11-20 difficulty:2, 21-30 difficulty:3.
 
-Pytania 1-3 → difficulty: 1 (najprostsze w zakresie, małe liczby, oczywisty kontekst)
-Pytania 4-7 → difficulty: 2 (średnie, nieco większe liczby, jeden krok myślenia)
-Pytania 8-10 → difficulty: 3 (najtrudniejsze w zakresie, większe liczby lub wielokrok)
+ZASADY (krytyczne):
+- "correct" musi być identycznym stringiem z "opts" (znak po znaku)
+- 4 różne opcje; dystraktorzy różnią się o ±1-3 od wyniku, nigdy ujemne
+- "q": max 15 słów; porównanie ZAWSZE z obiema liczbami ("Większa: 7 czy 3?"); zero emoji
+- "explanation": 1-2 zdania, obrazowe (jabłka, palce, czekoladki)
+- "category": Dodawanie | Odejmowanie | Mnożenie | Liczenie | Porównywanie | Figury | Zadanie | Wzorzec | Brakujący czynnik
+- "id": q1..q${QUESTIONS_POOL_SIZE}; "difficulty": liczba 1|2|3
+- Maks. 3 pytania z tej samej kategorii w bloku 10`
 
-## ZASADY OBLICZEŃ — KRYTYCZNE
-
-Przed zapisaniem każdego pytania wykonaj następujące kroki:
-1. Oblicz wynik ręcznie: zapisz działanie i wynik
-2. Sprawdź drugi raz: potwierdź że wynik się zgadza
-3. Sprawdź opts: upewnij się że "correct" jest IDENTYCZNE z jednym z czterech opts (ten sam string, ta sama liczba)
-4. Sprawdź dystraktorzy: pozostałe 3 opcje muszą być BŁĘDNE ale WIARYGODNE (różnią się o 1-3 od poprawnej)
-
-Przykład weryfikacji:
-- Działanie: 7 × 8
-- Krok 1: 7×8 = 56 ✓
-- Krok 2: 8×7 = 56 ✓ (przemienność)
-- correct: "56"
-- opts: ["54", "56", "58", "63"] ✓ (56 jest w liście, pozostałe błędne)
-
-## FORMAT WYJŚCIOWY
-
-Zwróć WYŁĄCZNIE tablicę JSON. Zero tekstu przed, zero tekstu po, zero markdown, zero komentarzy.
-Pierwszym znakiem odpowiedzi musi być "[", ostatnim "]".
-
-[
-  {
-    "id": "q1",
-    "q": "3 + 4 = ?",
-    "opts": ["5", "6", "7", "8"],
-    "correct": "7",
-    "explanation": "Liczymy dalej od 3, robiąc cztery kroki: 4, 5, 6, 7 — i już mamy wynik!",
-    "category": "Dodawanie",
-    "difficulty": 1
-  }
-]
-
-## REGUŁY KAŻDEGO POLA
-
-"id" → "q1" do "q10" — kolejno, bez przerw
-
-"q" → treść pytania, max 15 słów
-  - Działania zapisuj jako: 7 + 3 = ?, 5 × 4 = ?, 15 - 8 = ?
-  - Brakujący czynnik: ? × 6 = 42
-  - Zadanie tekstowe: max 2 zdania, ZAWSZE z konkretnymi liczbami w treści
-  - Porównanie: ZAWSZE podaj obie liczby wprost, np. "Która liczba jest większa: 7 czy 3?" — nigdy samo "Która jest większa?"
-  - ABSOLUTNY ZAKAZ: pytania bez konkretnych liczb w treści (np. zakazane: "Która liczba jest większa?" bez podania jakie liczby)
-  - NIE używaj znaków specjalnych ani emoji w pytaniu
-
-"opts" → dokładnie 4 stringi
-  - Poprawna odpowiedź ukryta na losowej pozycji (nie zawsze pierwsza lub ostatnia)
-  - Dystraktorzy: liczby bliskie wyniku (±1, ±2, ±3), NIGDY ujemne dla tego wieku
-  - Wszystkie 4 opcje muszą być różne od siebie
-  - Dla pytań słownych ("które większe?") opts to np. ["3", "7", "są równe", "nie wiem"]
-
-"correct" → musi być IDENTYCZNYM STRINGIEM z jednego z opts, znak po znaku
-
-"explanation" → 1-2 zdania, ciepły ton Pani Sowy, konkretny sposób dojścia do wyniku
-  - Używaj obrazów z życia: jabłka, palce, czekoladki, kaczki, kroki
-  - Przykład dobry: "Wyobraź sobie 6 pudełek z 7 czekoladkami — razem masz 42 słodkości!"
-  - Przykład zły: "Odpowiedź to 42" (za mało, nie tłumaczy)
-
-"category" → TYLKO jedna z: Dodawanie, Odejmowanie, Mnożenie, Liczenie, Porównywanie, Figury, Zadanie, Wzorzec, Brakujący czynnik
-
-"difficulty" → liczba 1, 2 lub 3 (nie string)
-
-## RÓŻNORODNOŚĆ — OBOWIĄZKOWA
-
-- Żadne dwie liczby nie mogą się powtarzać jako główne operandy (np. nie dwa pytania z "7 × 8")
-- Maksymalnie 3 pytania z tej samej kategorii
-- Zadania tekstowe: każde z innym kontekstem (np. jedno o jabłkach, drugie o pająkach)
-- Opcje odpowiedzi: poprawna na pozycji 1 max 2 razy, na pozycji 2 max 3 razy, itd. — rozkład losowy
-
-## SAMOKONTROLA PRZED ZWRÓCENIEM
-
-Zanim zwrócisz JSON, sprawdź mentalnie każde pytanie według listy:
-□ Czy wynik jest matematycznie poprawny?
-□ Czy "correct" jest identyczne z jednym z "opts"?
-□ Czy wszystkie 4 opts są różne od siebie?
-□ Czy difficulty rośnie (1,1,1,2,2,2,2,3,3,3)?
-□ Czy JSON jest syntaktycznie poprawny (wszystkie nawiasy zamknięte, przecinki na miejscu)?
-□ Czy odpowiedź zaczyna się od "[" i kończy na "]"?
-
-Jeśli którakolwiek odpowiedź brzmi "nie" — popraw przed zwróceniem.`
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -110,7 +36,7 @@ Jeśli którakolwiek odpowiedź brzmi "nie" — popraw przed zwróceniem.`
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-3-5-haiku-20241022',
       max_tokens: 2000,
       system: [
         {
@@ -169,7 +95,7 @@ export async function generateReview(
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-3-5-haiku-20241022',
       max_tokens: 400,
       system: [
         {
@@ -226,7 +152,7 @@ Wymagany format JSON z dokładnie dwoma kluczami (bez znaczników markdown, czys
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 2000,
       system: [
         {
@@ -294,7 +220,7 @@ export async function sendChatMessage(
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-3-5-haiku-20241022',
       max_tokens: 150,
       system: [
         {
@@ -319,3 +245,45 @@ Jeśli dziecko pisze o smutku/strachu: reaguj ciepło i zaproponuj rozmowę z ro
   const data = await res.json()
   return data.content?.[0]?.text || 'Sowa chwilowo przysnęła na gałęzi. Uhu!'
 }
+
+export async function generateLiterReview(
+  answers: LiterAnswer[],
+  level: LiterLevel,
+  score: number
+): Promise<string> {
+  const wrong = answers.filter(a => !a.correct)
+  if (wrong.length === 0) return 'Dostałeś 10 na 10! Jesteś Królem i Mistrzem Liter! Wszystko bezbłędnie — sowa pęka z dumy! Uhu!'
+
+  const wrongList = wrong.map(a => {
+    if (a.question.type === 'listen' || a.question.type === 'image') return `- Pytanie o literę ${a.question.letter} | Błędnie wskazano literę.`
+    if (a.question.type === 'syllable') return `- Wyraz ${a.question.syllableWord} | Błąd w składaniu sylab.`
+    if (a.question.type === 'draw') return `- Pisanie litery ${a.question.drawLetter} | Kształt nie był idealny.`
+    return ''
+  }).join('\\n')
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': API_KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 150,
+      system: [
+        {
+          type: 'text',
+          text: `Jesteś Panią Sową — ciepłą nauczycielką literatury i czytania dla dzieci 6 lat. Napisz krótkie (max 120 słów), bardzo ciepłe i proste omówienie wyników konkursu literowego. Skup się na zachęcie i prostym wyjaśnieniu, że każda litera to przygoda. Pisz po polsku, bez markdown.`,
+          cache_control: { type: 'ephemeral' }
+        }
+      ],
+      messages: [{ role: 'user', content: `Poziom: ${level}. Wynik: ${score}/10. Błędy:\n${wrongList}` }],
+    }),
+  })
+
+  const data = await res.json()
+  return data.content?.[0]?.text || 'Bardzo ładnie Ci poszło! Czytaj dalej i omijaj przeszkody!'
+}
+
