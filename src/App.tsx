@@ -8,6 +8,7 @@ import { MainScreen } from './screens/MainScreen'
 import { TutorScreen } from './screens/TutorScreen'
 import { ChatScreen } from './screens/ChatScreen'
 import { generateQuestions, generateReview } from './lib/claude'
+import { getQuestionsFromCache, saveQuestionsToCache } from './lib/questionsCache'
 import { useTimer } from './hooks/useTimer'
 import { useHistory } from './hooks/useHistory'
 
@@ -46,10 +47,23 @@ export default function App() {
 
   const handleStart = async (lvl: Level) => {
     setLevel(lvl)
+
+    // 1. Spróbuj z cache
+    const cached = getQuestionsFromCache(lvl)
+    if (cached) {
+      setQuestions(cached)
+      timer.start()
+      setScreen('quiz')
+      return
+    }
+
+    // 2. Cache miss — generuj pulę i zapisz
     setScreen('loading_q')
     try {
-      const q = await generateQuestions(lvl)
-      setQuestions(q)
+      const pool = await generateQuestions(lvl)   // generuje QUESTIONS_POOL_SIZE
+      saveQuestionsToCache(lvl, pool)              // zapisz całą pulę
+      const shuffled = [...pool].sort(() => Math.random() - 0.5)
+      setQuestions(shuffled.slice(0, 10))          // na quiz bierz 10
       timer.start()
       setScreen('quiz')
     } catch (e) {
