@@ -1,6 +1,3 @@
-const REGION = import.meta.env.VITE_AZURE_REGION || 'westeurope'
-const AZURE_KEY = import.meta.env.VITE_AZURE_TTS_KEY
-
 /** Cache dla audio (żeby nie pobierać tego samego dwa razy w jednej sesji) */
 const audioCache: Record<string, string> = {}
 
@@ -8,16 +5,6 @@ const audioCache: Record<string, string> = {}
  * Funkcja konwertująca tekst na mowę za pomocą Microsoft Azure (Zofia Neural) 
  */
 export async function speak(text: string): Promise<void> {
-  if (!AZURE_KEY) {
-    // Fallback do systemowego syntezatora jeśli brak klucza
-    console.warn('Brak klucza Azure TTS — używam systemowego syntezatora.')
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = 'pl-PL'
-    utterance.rate = 0.9
-    window.speechSynthesis.speak(utterance)
-    return
-  }
-
   try {
     // Sprawdź cache
     if (audioCache[text]) {
