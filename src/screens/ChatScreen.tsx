@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { sendChatMessage } from '../lib/claude'
 import { cleanForTTS } from '../lib/ttsClean'
+import { speak } from '../lib/azureTTS'
 
 interface Props {
   onBack: () => void
@@ -28,33 +29,8 @@ export function ChatScreen({ onBack }: Props) {
 
   // Play audio when a new assistant message arrives
   const playAudio = (text: string) => {
-    // Usun emotikony i znaczniki markdown (**, *, __, _, #, `) zeby lektor ich nie czytal
     const cleanedText = cleanForTTS(text)
-    
-    const speech = new SpeechSynthesisUtterance(cleanedText)
-    speech.lang = 'pl-PL'
-    speech.rate = 0.95
-    speech.pitch = 1.3
-    
-    const voices = window.speechSynthesis.getVoices()
-    const plVoices = voices.filter(v => v.lang.includes('pl') || v.lang.includes('PL'))
-    const femaleVoice = plVoices.find(v => 
-      v.name.includes('Zosia') || 
-      v.name.includes('Paulina') || 
-      v.name.includes('Ewa') || 
-      v.name.includes('Maja') ||
-      v.name.includes('Google') ||
-      v.name.toLowerCase().includes('female')
-    )
-    
-    if (femaleVoice) {
-      speech.voice = femaleVoice
-    } else if (plVoices.length > 0) {
-      speech.voice = plVoices[0]
-    }
-
-    window.speechSynthesis.cancel()
-    window.speechSynthesis.speak(speech)
+    if (cleanedText) speak(cleanedText)
   }
 
   const executeSend = async (textToSend: string) => {

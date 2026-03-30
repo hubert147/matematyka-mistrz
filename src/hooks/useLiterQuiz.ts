@@ -1,41 +1,12 @@
 import { useState, useEffect } from 'react'
 import type { LiterLevel, LiterQuestion, LiterAnswer, TaskType } from '../types/liter'
 import { generateSchedule, buildQuestion, resetQuestionState } from '../data/literData'
+import { speak } from '../lib/azureTTS'
 import { cleanForTTS } from '../lib/ttsClean'
-
-// Reuse the voice loading logic from useQuiz or extract it? 
-// For now, I'll localise it or use a shared one if I had one. 
-// Actually, I'll use a simple version here.
-
-function getPolishFemaleVoice(): Promise<SpeechSynthesisVoice | null> {
-  return new Promise(resolve => {
-    const tryFind = () => {
-      const voices = window.speechSynthesis.getVoices()
-      const plVoices = voices.filter(v => v.lang.includes('pl') || v.lang.includes('PL'))
-      const female = plVoices.find(v =>
-        v.name.includes('Zosia') || v.name.includes('Paulina') ||
-        v.name.includes('Ewa') || v.name.includes('Maja') ||
-        v.name.includes('Google') || v.name.toLowerCase().includes('female')
-      )
-      resolve(female || plVoices[0] || null)
-    }
-    if (window.speechSynthesis.getVoices().length > 0) tryFind()
-    else window.speechSynthesis.onvoiceschanged = tryFind
-  })
-}
 
 function speakText(text: string) {
   const cleaned = cleanForTTS(text)
-  if (!cleaned) return
-  getPolishFemaleVoice().then(voice => {
-    window.speechSynthesis.cancel()
-    const utt = new SpeechSynthesisUtterance(cleaned)
-    utt.lang = 'pl-PL'
-    utt.rate = 0.95
-    utt.pitch = 1.3
-    if (voice) utt.voice = voice
-    window.speechSynthesis.speak(utt)
-  })
+  if (cleaned) speak(cleaned)
 }
 
 export function useLiterQuiz(level: LiterLevel, onComplete: (answers: LiterAnswer[]) => void, focusType?: TaskType) {

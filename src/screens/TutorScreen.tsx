@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { analyzeTutorImage } from '../lib/claude'
+import { speak } from '../lib/azureTTS'
 import { LoadingScreen } from './LoadingScreen'
 import { QuizScreen } from './QuizScreen'
 import type { Question, Answer } from '../types'
@@ -110,33 +111,7 @@ export function TutorScreen({ onBack }: Props) {
             <button
               onClick={() => {
                 const cleanedText = explanation.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '')
-                const speech = new SpeechSynthesisUtterance(cleanedText)
-                speech.lang = 'pl-PL'
-                
-                // Ciepły, młodszy, "sowi" ptasi wydźwięk - trochę wyżej, odrobinkę wolniej
-                speech.rate = 0.95
-                speech.pitch = 1.3
-                
-                // Szukamy kobiecych głosów ('Zosia' na iPhone, 'Paulina' na Windows, 'Google' na Android)
-                const voices = window.speechSynthesis.getVoices()
-                const plVoices = voices.filter(v => v.lang.includes('pl') || v.lang.includes('PL'))
-                const femaleVoice = plVoices.find(v => 
-                  v.name.includes('Zosia') || 
-                  v.name.includes('Paulina') || 
-                  v.name.includes('Ewa') || 
-                  v.name.includes('Maja') ||
-                  v.name.includes('Google') ||
-                  v.name.toLowerCase().includes('female')
-                )
-                
-                if (femaleVoice) {
-                  speech.voice = femaleVoice
-                } else if (plVoices.length > 0) {
-                  speech.voice = plVoices[0]
-                }
-
-                window.speechSynthesis.cancel() // wylacza poprzednie nakladajace sie glosy
-                window.speechSynthesis.speak(speech)
+                speak(cleanedText)
               }}
               className="bg-blue-100 text-blue-700 hover:bg-blue-200 py-4 rounded-2xl font-black text-xl transition-colors flex items-center justify-center gap-3 w-full"
             >

@@ -2,39 +2,11 @@ import { useState, useRef, useEffect } from 'react'
 import type { Question, Answer } from '../types'
 import { cleanForTTS } from '../lib/ttsClean'
 
-// Pomocnicza funkcja do zaladowania glosow (Chrome laduje je asynchronicznie)
-function getPolishFemaleVoice(): Promise<SpeechSynthesisVoice | null> {
-  return new Promise(resolve => {
-    const tryFind = () => {
-      const voices = window.speechSynthesis.getVoices()
-      const plVoices = voices.filter(v => v.lang.includes('pl') || v.lang.includes('PL'))
-      const female = plVoices.find(v =>
-        v.name.includes('Zosia') || v.name.includes('Paulina') ||
-        v.name.includes('Ewa') || v.name.includes('Maja') ||
-        v.name.includes('Google') || v.name.toLowerCase().includes('female')
-      )
-      resolve(female || plVoices[0] || null)
-    }
-    if (window.speechSynthesis.getVoices().length > 0) {
-      tryFind()
-    } else {
-      window.speechSynthesis.onvoiceschanged = tryFind
-    }
-  })
-}
+import { speak } from '../lib/azureTTS'
 
-function speakText(text: string) {
+async function speakText(text: string) {
   const cleaned = cleanForTTS(text)
-  if (!cleaned) return
-  getPolishFemaleVoice().then(voice => {
-    window.speechSynthesis.cancel()
-    const utt = new SpeechSynthesisUtterance(cleaned)
-    utt.lang = 'pl-PL'
-    utt.rate = 0.95
-    utt.pitch = 1.3
-    if (voice) utt.voice = voice
-    window.speechSynthesis.speak(utt)
-  })
+  if (cleaned) await speak(cleaned)
 }
 
 export function useQuiz(initialQuestions: Question[], onComplete: (answers: Answer[]) => void) {
@@ -90,42 +62,24 @@ export function useQuiz(initialQuestions: Question[], onComplete: (answers: Answ
       : currentQuestion.explanation
 
     const cleanedText = cleanForTTS(textToRead)
+    if (cleanedText) {
+      speak(cleanedText).then(() => {
+        setTimeout(goToNext, 600)
+      })
+    } else {
+      goToNext()
+    }
 
-    getPolishFemaleVoice().then(voice => {
-      const speech = new SpeechSynthesisUtterance(cleanedText)
-      speech.lang = 'pl-PL'
-      speech.rate = 0.95
-      speech.pitch = 1.3
-      if (voice) speech.voice = voice
-
-      window.speechSynthesis.cancel()
-
-      let hasGoneNext = false
-      let speechTimer: any
-
-      const goToNext = () => {
-        if (hasGoneNext) return
-        hasGoneNext = true
-        clearTimeout(speechTimer)
-
-        // Zerujemy stan odpowiedzi PRZED zmiana pytania, by uniknac przeblysku
-        setIsAnswered(false)
-        setSelectedAnswer(null)
-
-        if (currentIndex < questions.length - 1) {
-          setCurrentIndex(prev => prev + 1)
-          questionStartTime.current = Date.now()
-        } else {
-          onComplete([...answers, newAnswer])
-        }
+    function goToNext() {
+      setIsAnswered(false)
+      setSelectedAnswer(null)
+      if (currentIndex < questions.length - 1) {
+        setCurrentIndex(prev => prev + 1)
+        questionStartTime.current = Date.now()
+      } else {
+        onComplete([...answers, newAnswer])
       }
-
-      speech.onend = () => setTimeout(goToNext, 600)
-      const estimatedTime = (cleanedText.length * 90) + 1500
-      speechTimer = setTimeout(goToNext, estimatedTime)
-
-      window.speechSynthesis.speak(speech)
-    })
+    }
 
     return { isCorrect }
   }
