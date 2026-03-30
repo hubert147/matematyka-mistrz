@@ -7,7 +7,7 @@ export interface LetterEntry {
   word: string
   pronunciation: string   // dla TTS
   emoji: string           // fallback gdy brak obrazka
-  imageFile: string | null // plik w /public/images/letters/
+  imageFile?: string       // plik w /public/images/letters/
 }
 
 export const LETTER_DICT: Record<string, LetterEntry> = {
@@ -27,20 +27,20 @@ export const LETTER_DICT: Record<string, LetterEntry> = {
   M: { letter:'M', word:'MIŚ',     pronunciation:'M jak Miś',     emoji:'🧸', imageFile:'m_mis.png' },
   N: { letter:'N', word:'NOGA',    pronunciation:'N jak Noga',    emoji:'🦵', imageFile:'n_noga.png' },
   O: { letter:'O', word:'OSA',     pronunciation:'O jak Osa',     emoji:'🐝', imageFile:'o_osa.png' },
-  Ó: { letter:'Ó', word:'ÓSEMKA',  pronunciation:'Ó jak Ósemka',  emoji:'8️⃣', imageFile:null },
+  Ó: { letter:'Ó', word:'ÓSEMKA',  pronunciation:'Ó jak Ósemka',  emoji:'8️⃣', imageFile:undefined },
   P: { letter:'P', word:'PIES',    pronunciation:'P jak Pies',    emoji:'🐕', imageFile:'p_pies.png' },
-  R: { letter:'R', word:'ROWER',   pronunciation:'R jak Rower',   emoji:'🚲', imageFile:null },
-  S: { letter:'S', word:'SŁOŃ',    pronunciation:'S jak Słoń',    emoji:'🐘', imageFile:null },
-  Ś: { letter:'Ś', word:'ŚLIMAK',  pronunciation:'Ś jak Ślimak',  emoji:'🐌', imageFile:null },
-  T: { letter:'T', word:'TORBA',   pronunciation:'T jak Torba',   emoji:'👜', imageFile:null },
-  U: { letter:'U', word:'UCHO',    pronunciation:'U jak Ucho',    emoji:'👂', imageFile:null },
-  W: { letter:'W', word:'WODA',    pronunciation:'W jak Woda',    emoji:'💧', imageFile:null },
-  Z: { letter:'Z', word:'ZEBRA',   pronunciation:'Z jak Zebra',   emoji:'🦓', imageFile:null },
-  Ź: { letter:'Ź', word:'ŹRÓDŁO',  pronunciation:'Ź jak Źródło',  emoji:'🏞️', imageFile:null },
-  Ż: { letter:'Ż', word:'ŻABA',    pronunciation:'Ż jak Żaba',    emoji:'🐸', imageFile:null },
-  Ń: { letter:'Ń', word:'KOŃ',     pronunciation:'Ń jak koń — litera na końcu', emoji:'🐴', imageFile:null },
-  Ć: { letter:'Ć', word:'ĆMA',     pronunciation:'Ć jak Ćma',     emoji:'🦋', imageFile:null },
-  Ą: { letter:'Ą', word:'ZĄB',     pronunciation:'Ą jak ząb — litera w środku', emoji:'🦷', imageFile:null },
+  R: { letter:'R', word:'ROWER',   pronunciation:'R jak Rower',   emoji:'🚲', imageFile:undefined },
+  S: { letter:'S', word:'SŁOŃ',    pronunciation:'S jak Słoń',    emoji:'🐘', imageFile:undefined },
+  Ś: { letter:'Ś', word:'ŚLIMAK',  pronunciation:'Ś jak Ślimak',  emoji:'🐌', imageFile:undefined },
+  T: { letter:'T', word:'TORBA',   pronunciation:'T jak Torba',   emoji:'👜', imageFile:undefined },
+  U: { letter:'U', word:'UCHO',    pronunciation:'U jak Ucho',    emoji:'👂', imageFile:undefined },
+  W: { letter:'W', word:'WODA',    pronunciation:'W jak Woda',    emoji:'💧', imageFile:undefined },
+  Z: { letter:'Z', word:'ZEBRA',   pronunciation:'Z jak Zebra',   emoji:'🦓', imageFile:undefined },
+  Ź: { letter:'Ź', word:'ŹRÓDŁO',  pronunciation:'Ź jak Źródło',  emoji:'🏞️', imageFile:undefined },
+  Ż: { letter:'Ż', word:'ŻABA',    pronunciation:'Ż jak Żaba',    emoji:'🐸', imageFile:undefined },
+  Ń: { letter:'Ń', word:'KOŃ',     pronunciation:'Ń jak koń — litera na końcu', emoji:'🐴', imageFile:undefined },
+  Ć: { letter:'Ć', word:'ĆMA',     pronunciation:'Ć jak Ćma',     emoji:'🦋', imageFile:undefined },
+  Ą: { letter:'Ą', word:'ZĄB',     pronunciation:'Ą jak ząb — litera w środku', emoji:'🦷', imageFile:undefined },
 }
 
 // ─── Słowa sylabowe (zawsze wielosylabowe) ────────────────────────────────────
@@ -196,7 +196,7 @@ export function buildQuestion(type: TaskType, level: LiterLevel, index: number):
       word: entry?.word,
       pronunciation: entry?.pronunciation ?? `${letter}`,
       emoji: entry?.emoji ?? '❓',
-      imageFile: entry?.imageFile ?? null,
+      imageFile: entry?.imageFile,
       options,
       correct: letter,
     }
