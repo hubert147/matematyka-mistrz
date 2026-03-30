@@ -290,6 +290,7 @@ export async function sendChatMessage(
 - Maksymalnie 3 linijki tekstu na odpowiedź — dzieci mają krótką uwagę
 - Jedna myśl, jedno wyjaśnienie, jedno pytanie zwrotne LUB pochwała
 - Żadnych list, punktów, nagłówków — tylko naturalna mowa
+- ABSOLUTNY ZAKAZ używania markdown: nie uzywaj **, *, __, _, # ani znakow formatowania — to jest czat glosowy!
 - Kończ pytaniem zwrotnym jeśli to pasuje: "A Ty jak myślisz?", "Chcesz sprawdzić na przykładzie?"
 - Używaj emojii sparingly: max 1-2 na odpowiedź, tylko gdy wzmacniają emocję
 

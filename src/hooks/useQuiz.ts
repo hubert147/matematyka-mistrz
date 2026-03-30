@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import type { Question, Answer } from '../types'
+import { cleanForTTS } from '../lib/ttsClean'
 
 export function useQuiz(initialQuestions: Question[], onComplete: (answers: Answer[]) => void) {
   const [questions] = useState<Question[]>(() => {
@@ -43,7 +44,7 @@ export function useQuiz(initialQuestions: Question[], onComplete: (answers: Answ
       ? ["Świetnie!", "Znakomicie!", "Oto chodziło!", "Rewelacja!", "Brawo!"][Math.floor(Math.random() * 5)] 
       : currentQuestion.explanation
 
-    const cleanedText = textToRead.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '')
+    const cleanedText = cleanForTTS(textToRead)
     const speech = new SpeechSynthesisUtterance(cleanedText)
     speech.lang = 'pl-PL'
     speech.rate = 0.95
