@@ -2,7 +2,21 @@ import type { Level, Question, Answer } from '../types'
 import type { LiterLevel, LiterAnswer } from '../types/liter'
 import { QUESTIONS_POOL_SIZE } from './questionsCache'
 
-const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY
+async function fetchFromProxy(body: any) {
+  const res = await fetch('/api/claude', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  })
+
+  if (!res.ok) {
+    const err = await res.text()
+    console.error('Claude Proxy Error:', err)
+    throw new Error('Sowa ma problem z myśleniem (API Error)')
+  }
+
+  return res.json()
+}
 
 export async function generateQuestions(level: Level): Promise<Question[]> {
   const levelDesc = {
@@ -12,11 +26,8 @@ export async function generateQuestions(level: Level): Promise<Question[]> {
   }[level]
 
   const prompt = `Jesteś generatorem pytań matematycznych dla dzieci 6-8 lat. Zwróć TYLKO tablicę JSON z ${QUESTIONS_POOL_SIZE} pytaniami. Zero tekstu poza JSON.
-
 POZIOM: ${level} | ZAKRES: ${levelDesc}
-
 Progresja trudności: pytania 1-10 difficulty:1, 11-20 difficulty:2, 21-30 difficulty:3.
-
 ZASADY (krytyczne):
 - "correct" musi być identycznym stringiem z "opts" (znak po znaku)
 - 4 różne opcje; dystraktorzy różnią się o ±1-3 od wyniku, nigdy ujemne
@@ -26,62 +37,18 @@ ZASADY (krytyczne):
 - "id": q1..q${QUESTIONS_POOL_SIZE}; "difficulty": liczba 1|2|3
 - Maks. 3 pytania z tej samej kategorii w bloku 10`
 
+  const data = await fetchFromProxy({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 4000,
+    system: [{ type: 'text', text: prompt, cache_control: { type: 'ephemeral' } }],
+    messages: [{ role: 'user', content: `Generuj ${QUESTIONS_POOL_SIZE} pytań matematycznych.` }],
+  })
 
-  let res;
-  try {
-    res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4000,
-        system: [{ type: 'text', text: prompt, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: `Generuj ${QUESTIONS_POOL_SIZE} pytań matematycznych.` }],
-      }),
-    })
-  } catch (e) {
-    console.warn('Haiku 4.5 nie odpowiada, próba fallback na 3.5...')
-  }
-
-  // Fallback if 4.5 failed or returned error
-  if (!res || !res.ok) {
-     res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
-        max_tokens: 4000,
-        system: [{ type: 'text', text: prompt }],
-        messages: [{ role: 'user', content: `Generuj ${QUESTIONS_POOL_SIZE} pytań matematycznych.` }],
-      }),
-    })
-  }
-
-  if (!res.ok) {
-    const err = await res.text()
-    console.error('Pani Sowa Ma Problem (API Error):', err)
-    throw new Error('Błąd komunikacji z Claude API: ' + (res.status === 404 ? 'Model nie znaleziony' : res.status))
-  }
-
-  const data = await res.json()
   const text = data.content?.[0]?.text || ''
-
-  // Bezpieczny parse — wytnij JSON z odpowiedzi
   const match = text.match(/\[[\s\S]*\]/)
   if (!match) throw new Error('Brak JSON w odpowiedzi Claude')
   const questions: Question[] = JSON.parse(match[0])
 
-  // Walidacja
   if (!Array.isArray(questions) || questions.length < 10) {
     throw new Error('Claude nie zwrócił wystarczającej liczby pytań')
   }
@@ -95,7 +62,6 @@ export async function generateReview(
   score: number
 ): Promise<string> {
   const wrong = answers.filter(a => !a.correct)
-
   if (wrong.length === 0) {
     return 'Brawo! Bezbłędny wynik! Jesteś prawdziwym mistrzem matematyki! Wszystkie 10 pytań poprawnie — to niesamowite osiągnięcie!'
   }
@@ -104,51 +70,35 @@ export async function generateReview(
     `- Pytanie: "${a.question.q}" | Twoja odpowiedź: ${a.chosen} | Poprawna: ${a.question.correct} | Wskazówka: ${a.question.explanation}`
   ).join('\\n')
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 400,
-      system: [
-        {
-          type: 'text',
-          text: `Jesteś Panią Sową — ciepłą nauczycielką matematyki dla dzieci 6-8 lat. Napisz krótkie, ciepłe omówienie wyników quizu (do 120 słów). 1. Zacznij od pochwały. 2. Wyjaśnij błędy prostymi obrazami. 3. Zakończ motywacyjnie. Pisz bezpośrednio do dziecka, po polsku, ciepło i zachęcająco.`,
-          cache_control: { type: 'ephemeral' }
-        }
-      ],
-      messages: [{ role: 'user', content: `Poziom: ${level}. Wynik: ${score}/10. Błędy:\n${wrongList}` }],
-    }),
+  const data = await fetchFromProxy({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 400,
+    system: [{
+      type: 'text',
+      text: `Jesteś Panią Sową — ciepłą nauczycielką matematyki dla dzieci 6-8 lat. Napisz krótkie, ciepłe omówienie wyników quizu (do 120 słów). zacznij od pochwały. Pisz bezpośrednio do dziecka, po polsku, ciepło i zachęcająco.`,
+      cache_control: { type: 'ephemeral' }
+    }],
+    messages: [{ role: 'user', content: `Poziom: ${level}. Wynik: ${score}/10. Błędy:\n${wrongList}` }],
   })
 
-  const data = await res.json()
   return data.content?.[0]?.text || 'Dobra robota! Ćwicz dalej!'
 }
 
 export async function analyzeTutorImage(
   base64Image: string
 ): Promise<{ explanation: string; questions: Question[] }> {
-  // Strip out the data:image prefix to get just the base64 string
   const base64Data = base64Image.split(',')[1] || base64Image
   const mimeType = base64Image.split(';')[0].split(':')[1] || 'image/jpeg'
 
   const prompt = `Jesteś Panią Sową - ciepłą i doświadczoną edukatorką wczesnoszkolną (dzieci 6-8 lat).
-Dostajesz zdjęcie zadania domowego dziecka, kawałka ćwiczeń lub książki.
-Twoim głównym zadaniem jest WYTŁUMACZENIE dziecku co jest na zdjęciu i o co w nim chodzi.
-Kategorycznie ZAKAZUJĘ podawania gotowych rozwiązań do niezrobionych zadań na zdjęciu. Masz pomóc dziecku do nich dojść krok po kroku.
-
-Wymagany format JSON z dokładnie dwoma kluczami (bez znaczników markdown, czysty JSON):
+Wytłumacz dziecku co jest na zdjęciu i o co w nim chodzi. Kategorycznie ZAKAZUJĘ podawania gotowych rozwiązań do niezrobionych zadań.
+Wymagany format JSON z dokładnie dwoma kluczami:
 {
   "explanation": "Twój ciepły komentarz jako Pani Sowa. Wyjaśnienie koncepcji. Minimum 3 zdania, maksimum 6.",
   "questions": [
     {
       "id": "t1",
-      "q": "Pytanie sprawdzające wygenerowane na podstawie zdjęcia. Np. Ile skrzydeł mają 3 kaczki?",
+      "q": "Pytanie sprawdzające wygenerowane na podstawie zdjęcia.",
       "opts": ["A", "B", "C", "D"],
       "correct": "Poprawna odpowiedz pasujaca 1:1 do stringa z opts",
       "explanation": "Wyjaśnienie odpowiedzi po wybraniu błędnej",
@@ -156,60 +106,22 @@ Wymagany format JSON z dokładnie dwoma kluczami (bez znaczników markdown, czys
       "difficulty": 1
     }
   ]
-}
+}`
 
-- Zwróć od 2 do 3 pytań "questions" z options.
-- Jeśli zdjęcie nie dotyczy matematyki/nauki przekaż dziecku w "explanation", że Sowa chętnie porozmawia, ale tu uczy matematyki, i daj 1 łatwe, całkowicie standardowe, matematyczne pytanie.`
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2000,
-      system: [
-        {
-          type: 'text',
-          text: prompt,
-          cache_control: { type: 'ephemeral' }
-        }
+  const data = await fetchFromProxy({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 2000,
+    system: [{ type: 'text', text: prompt, cache_control: { type: 'ephemeral' } }],
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64Data } },
+        { type: 'text', text: "Przeanalizuj to zdjęcie zadania domowego." },
       ],
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: mimeType,
-                data: base64Data,
-              },
-            },
-            {
-              type: 'text',
-              text: "Przeanalizuj to zdjęcie zadania domowego.",
-            },
-          ],
-        },
-      ],
-    }),
+    }],
   })
 
-  if (!res.ok) {
-    const err = await res.text()
-    console.error('Claude Vision API Error:', err)
-    throw new Error('Błąd odczytu obrazu')
-  }
-
-  const data = await res.json()
   const text = data.content?.[0]?.text || ''
-
   try {
     const match = text.match(/\{[\s\S]*\}/)
     if (!match) throw new Error()
@@ -227,40 +139,16 @@ Wymagany format JSON z dokładnie dwoma kluczami (bez znaczników markdown, czys
 export async function sendChatMessage(
   messages: { role: 'user' | 'assistant'; content: string }[]
 ): Promise<string> {
+  const sysPrompt = `Jesteś Panią Sową — przyjazna, ciepła i figlarna nauczycielka dla dzieci 6-8 lat. Uczysz matematyki i przyrody.
+ZASADY: max 3 zdania; zero markdown; max 2 emoji; nigdy "błąd" (mów "prawie!"); porównania z życia (jabłka, palce, pizza).`
 
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 150,
-      system: [
-        {
-          type: 'text',
-          text: `Jesteś Panią Sową — przyjazna, ciepła i figlarna nauczycielka dla dzieci 6-8 lat. Uczysz matematyki i przyrody.
-ZASADY: max 3 zdania; zero markdown; max 2 emoji; nigdy "błąd" (mów "prawie!"); porównania z życia (jabłka, palce, pizza).
-Jeśli pytanie nieEdukacyjne: "Uhu! Sowy znają się tylko na szkole i przyrodzie! Na co masz ochotę?"
-Jeśli dziecko pisze o smutku/strachu: reaguj ciepło i zaproponuj rozmowę z rodzicem.`,
-          cache_control: { type: 'ephemeral' }
-        }
-      ],
-      messages: messages,
-    }),
+  const data = await fetchFromProxy({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 150,
+    system: [{ type: 'text', text: sysPrompt, cache_control: { type: 'ephemeral' } }],
+    messages: messages,
   })
 
-  if (!res.ok) {
-    const err = await res.text()
-    console.error('Claude Chat API Error:', err)
-    throw new Error('Błąd komunikacji z Sową')
-  }
-
-  const data = await res.json()
   return data.content?.[0]?.text || 'Sowa chwilowo przysnęła na gałęzi. Uhu!'
 }
 
@@ -279,29 +167,14 @@ export async function generateLiterReview(
     return ''
   }).join('\\n')
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 150,
-      system: [
-        {
-          type: 'text',
-          text: `Jesteś Panią Sową — ciepłą nauczycielką literatury i czytania dla dzieci 6 lat. Napisz krótkie (max 120 słów), bardzo ciepłe i proste omówienie wyników konkursu literowego. Skup się na zachęcie i prostym wyjaśnieniu, że każda litera to przygoda. Pisz po polsku, bez markdown.`,
-          cache_control: { type: 'ephemeral' }
-        }
-      ],
-      messages: [{ role: 'user', content: `Poziom: ${level}. Wynik: ${score}/10. Błędy:\n${wrongList}` }],
-    }),
+  const sysPrompt = `Jesteś Panią Sową — ciepłą nauczycielką literatury i czytania dla dzieci 6 lat. Napisz krótkie (max 120 słów), proste omówienie wyników konkursu literowego. Pisz po polsku, bez markdown.`
+
+  const data = await fetchFromProxy({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 150,
+    system: [{ type: 'text', text: sysPrompt, cache_control: { type: 'ephemeral' } }],
+    messages: [{ role: 'user', content: `Poziom: ${level}. Wynik: ${score}/10. Błędy:\n${wrongList}` }],
   })
 
-  const data = await res.json()
   return data.content?.[0]?.text || 'Bardzo ładnie Ci poszło! Czytaj dalej i omijaj przeszkody!'
 }
-

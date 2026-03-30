@@ -26,22 +26,14 @@ export async function speak(text: string): Promise<void> {
       return
     }
 
-    const res = await fetch(
-      `https://${REGION}.tts.speech.microsoft.com/cognitiveservices/v1`,
-      {
-        method: 'POST',
-        headers: {
-          'Ocp-Apim-Subscription-Key': AZURE_KEY,
-          'Content-Type': 'application/ssml+xml',
-          'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
-        },
-        body: `<speak version='1.0' xml:lang='pl-PL'>
+    const res = await fetch('/api/tts', {
+      method: 'POST',
+      body: `<speak version='1.0' xml:lang='pl-PL'>
           <voice name='pl-PL-ZofiaNeural'>
             ${text}
           </voice>
         </speak>`
-      }
-    )
+    })
 
     if (!res.ok) {
       const errBody = await res.text()
