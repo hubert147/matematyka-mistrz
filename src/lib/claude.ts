@@ -2,16 +2,34 @@ import type { Level, Question, Answer } from '../types'
 import type { LiterLevel, LiterAnswer } from '../types/liter'
 import { QUESTIONS_POOL_SIZE } from './questionsCache'
 
+const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY
+
 async function fetchFromProxy(body: any) {
-  const res = await fetch('/api/claude', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  })
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  
+  let res;
+  if (isLocal && API_KEY) {
+    res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify(body)
+    })
+  } else {
+    res = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+  }
 
   if (!res.ok) {
     const err = await res.text()
-    console.error('Claude Proxy Error:', err)
+    console.error('Claude API Error:', err)
     throw new Error('Sowa ma problem z myśleniem (API Error)')
   }
 
