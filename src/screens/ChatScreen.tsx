@@ -157,11 +157,11 @@ export function ChatScreen({ onBack }: Props) {
       </div>
 
       {/* Input area */}
-      <div className="bg-white p-4 border-t-2 border-gray-100 absolute bottom-0 left-0 right-0 max-w-2xl mx-auto shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
+      <div className="bg-white px-3 py-3 border-t-2 border-gray-100 sticky bottom-0 w-full shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
         <div className="flex gap-2">
           <button
             onClick={handleRecord}
-            className={`p-4 rounded-full text-3xl shadow-md transition-all ${
+          className={`flex-shrink-0 w-12 h-12 rounded-full text-2xl shadow-md transition-all flex items-center justify-center ${
               isRecording ? 'bg-red-500 animate-pulse text-white' : 'bg-green-100 text-green-600 hover:bg-green-200'
             }`}
           >
@@ -180,7 +180,7 @@ export function ChatScreen({ onBack }: Props) {
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:opacity-50 text-white p-4 rounded-full text-2xl transition-all shadow-md transform hover:scale-[1.05] disabled:hover:scale-100"
+            className="flex-shrink-0 w-12 h-12 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:opacity-50 text-white rounded-full text-xl transition-all shadow-md transform hover:scale-[1.05] disabled:hover:scale-100 flex items-center justify-center"
           >
             ✈️
           </button>

@@ -56,10 +56,12 @@ Pierwszym znakiem odpowiedzi musi być "[", ostatnim "]".
 
 "id" → "q1" do "q10" — kolejno, bez przerw
 
-"q" → treść pytania, max 12 słów
+"q" → treść pytania, max 15 słów
   - Działania zapisuj jako: 7 + 3 = ?, 5 × 4 = ?, 15 - 8 = ?
   - Brakujący czynnik: ? × 6 = 42
-  - Zadanie tekstowe: max 2 zdania, konkretne liczby
+  - Zadanie tekstowe: max 2 zdania, ZAWSZE z konkretnymi liczbami w treści
+  - Porównanie: ZAWSZE podaj obie liczby wprost, np. "Która liczba jest większa: 7 czy 3?" — nigdy samo "Która jest większa?"
+  - ABSOLUTNY ZAKAZ: pytania bez konkretnych liczb w treści (np. zakazane: "Która liczba jest większa?" bez podania jakie liczby)
   - NIE używaj znaków specjalnych ani emoji w pytaniu
 
 "opts" → dokładnie 4 stringi

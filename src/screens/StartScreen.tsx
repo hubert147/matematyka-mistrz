@@ -20,7 +20,8 @@ export function StartScreen({ onStart, onBack }: Props) {
         <div className="text-8xl animate-bounce">🏆</div>
         <div className="w-10"></div>
       </div>
-      <h1 className="text-4xl sm:text-5xl font-black text-orange-500 mb-2 text-center">Konkurs Matematyczny</h1>
+      <h1 className="text-4xl sm:text-5xl font-black text-orange-500 mb-2 text-center">Maja Się Uczy</h1>
+      <p className="text-gray-400 font-semibold mb-1 text-center text-xl">🏆 Konkurs Matematyczny</p>
       <p className="text-gray-500 font-bold mb-8">10 pytań • licznik czasu • ocena</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full mb-8">
