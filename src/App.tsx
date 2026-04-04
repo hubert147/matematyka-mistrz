@@ -12,6 +12,7 @@ import { LiterStartScreen } from './screens/liter/LiterStartScreen'
 import { LiterQuizScreen } from './screens/liter/LiterQuizScreen'
 import { LiterResultsScreen } from './screens/liter/LiterResultsScreen'
 import { LiterStudySelectScreen } from './screens/liter/LiterStudySelectScreen'
+import { LiterMistrzGame } from './games/litermistrz/Game'
 
 import { generateQuestions, generateReview, generateLiterReview } from './lib/claude'
 import { getQuestionsFromCache, saveQuestionsToCache } from './lib/questionsCache'
@@ -20,7 +21,7 @@ import { useTimer } from './hooks/useTimer'
 import { useHistory } from './hooks/useHistory'
 
 export default function App() {
-  const [screen, setScreen] = useState<'main' | 'start' | 'loading_q' | 'quiz' | 'loading_r' | 'results' | 'tutor' | 'chat' | 'liter_start' | 'liter_quiz' | 'liter_results' | 'liter_loading_r' | 'liter_study_select'>('main')
+  const [screen, setScreen] = useState<'main' | 'start' | 'loading_q' | 'quiz' | 'loading_r' | 'results' | 'tutor' | 'chat' | 'liter_start' | 'liter_quiz' | 'liter_results' | 'liter_loading_r' | 'liter_study_select' | 'litermistrz_game'>('main')
   const [level, setLevel] = useState<Level>('easy')
   const [literLevel, setLiterLevel] = useState<LiterLevel>('easy')
   const [focusType, setFocusType] = useState<TaskType | undefined>()
@@ -130,12 +131,13 @@ export default function App() {
   return (
     <div className="font-sans antialiased text-gray-900 bg-[#FFF9F0] min-h-screen">
       {screen === 'main' && (
-        <MainScreen 
-          onSelectMathQuiz={() => setScreen('start')} 
-          onSelectLiterQuiz={() => setScreen('liter_start')} 
-          onSelectTutor={() => setScreen('tutor')} 
-          onSelectChat={() => setScreen('chat')} 
+        <MainScreen
+          onSelectMathQuiz={() => setScreen('start')}
+          onSelectLiterQuiz={() => setScreen('liter_start')}
+          onSelectTutor={() => setScreen('tutor')}
+          onSelectChat={() => setScreen('chat')}
           onSelectStudy={() => setScreen('liter_study_select')}
+          onSelectLiterMistrz={() => setScreen('litermistrz_game')}
         />
       )}
       
@@ -147,6 +149,9 @@ export default function App() {
       {screen === 'quiz' && <QuizScreen questions={questions} formattedTime={timer.formatted} isUrgent={timer.isUrgent} onComplete={handleMathComplete} />}
       {screen === 'results' && session && <ResultsScreen session={session} onRestart={goToMain} />}
       
+      {/* LITERMISTRZ PHASER GAME */}
+      {screen === 'litermistrz_game' && <LiterMistrzGame onBack={goToMain} />}
+
       {/* LITERKI PKG */}
       {screen === 'liter_start' && <LiterStartScreen onStart={handleStartLiter} onBack={goToMain} />}
       {screen === 'liter_study_select' && <LiterStudySelectScreen onStart={handleStartStudyLiter} onBack={goToMain} />}

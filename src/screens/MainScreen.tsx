@@ -6,9 +6,10 @@ interface Props {
   onSelectTutor: () => void
   onSelectChat: () => void
   onSelectStudy: () => void
+  onSelectLiterMistrz?: () => void
 }
 
-export function MainScreen({ onSelectMathQuiz, onSelectLiterQuiz, onSelectTutor, onSelectChat, onSelectStudy }: Props) {
+export function MainScreen({ onSelectMathQuiz, onSelectLiterQuiz, onSelectTutor, onSelectChat, onSelectStudy, onSelectLiterMistrz }: Props) {
   const [showKonkursOptions, setShowKonkursOptions] = useState(false)
 
   return (
@@ -45,7 +46,7 @@ export function MainScreen({ onSelectMathQuiz, onSelectLiterQuiz, onSelectTutor,
                    <div className="text-xs text-gray-500 font-bold uppercase">Liczby i figury</div>
                  </div>
                </button>
-               <button 
+               <button
                  onClick={onSelectLiterQuiz}
                  className="w-full p-4 hover:bg-purple-50 rounded-2xl flex items-center gap-4 transition-colors border-2 border-transparent hover:border-purple-200"
                >
@@ -55,6 +56,18 @@ export function MainScreen({ onSelectMathQuiz, onSelectLiterQuiz, onSelectTutor,
                    <div className="text-xs text-gray-500 font-bold uppercase">Czytanie i pisanie</div>
                  </div>
                </button>
+               {onSelectLiterMistrz && (
+                 <button
+                   onClick={onSelectLiterMistrz}
+                   className="w-full p-4 hover:bg-yellow-50 rounded-2xl flex items-center gap-4 transition-colors border-2 border-transparent hover:border-yellow-300"
+                 >
+                   <span className="text-4xl bg-yellow-50 w-16 h-16 flex items-center justify-center rounded-xl">🦉</span>
+                   <div className="text-left">
+                     <div className="font-black text-gray-800 text-lg">LiterMistrz</div>
+                     <div className="text-xs text-gray-500 font-bold uppercase">Gra z Panią Sową ✨</div>
+                   </div>
+                 </button>
+               )}
             </div>
           )}
         </div>
