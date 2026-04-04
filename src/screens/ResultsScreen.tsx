@@ -8,12 +8,48 @@ interface Props {
   onRestart: () => void
 }
 
+function launchFireworks() {
+  const duration = 4000
+  const end = Date.now() + duration
+  const colors = ['#ff0000', '#ffd700', '#00ff00', '#00bfff', '#ff69b4', '#ff6600']
+
+  const frame = () => {
+    confetti({
+      particleCount: 6,
+      angle: 60,
+      spread: 55,
+      origin: { x: 0 },
+      colors,
+    })
+    confetti({
+      particleCount: 6,
+      angle: 120,
+      spread: 55,
+      origin: { x: 1 },
+      colors,
+    })
+    confetti({
+      particleCount: 8,
+      angle: 90,
+      spread: 80,
+      origin: { x: 0.5, y: 0.3 },
+      colors,
+      startVelocity: 45,
+    })
+    if (Date.now() < end) requestAnimationFrame(frame)
+  }
+  frame()
+}
+
 export function ResultsScreen({ session, onRestart }: Props) {
   const { load } = useHistory()
   const [history, setHistory] = useState<QuizSession[]>([])
-  
+  const isPerfect = session.score === 10
+
   useEffect(() => {
-    if (session.score >= 7) {
+    if (isPerfect) {
+      launchFireworks()
+    } else if (session.score >= 7) {
       confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } })
     }
     setHistory(load())
@@ -39,6 +75,22 @@ export function ResultsScreen({ session, onRestart }: Props) {
 
   return (
     <div className="max-w-lg mx-auto px-4 py-8 min-h-screen relative bg-[#FFF9F0]">
+      {isPerfect && (
+        <div className="text-center bg-gradient-to-br from-yellow-400 via-orange-400 to-red-500 p-8 rounded-3xl shadow-xl mb-6 mt-8 animate-bounce-slow border-4 border-yellow-300">
+          <div className="text-6xl mb-3">🎆🎇🎆</div>
+          <div className="text-white font-black text-3xl drop-shadow-lg leading-tight">
+            WYGRAŁAŚ
+          </div>
+          <div className="text-white font-black text-5xl drop-shadow-lg my-2 tracking-tight">
+            MILION DOLARÓW!
+          </div>
+          <div className="text-yellow-100 font-black text-6xl drop-shadow-lg tracking-widest">
+            $1,000,000
+          </div>
+          <div className="text-5xl mt-3">💰🏆💰</div>
+        </div>
+      )}
+
       <div className="text-center bg-white p-8 rounded-3xl shadow-sm mb-6 mt-8">
         <div className="text-6xl text-yellow-400 mb-4 flex justify-center gap-1">
           {Array.from({ length: 5 }).map((_, i) => (

@@ -47,13 +47,16 @@ export async function generateQuestions(level: Level): Promise<Question[]> {
 POZIOM: ${level} | ZAKRES: ${levelDesc}
 Progresja trudności: pytania 1-10 difficulty:1, 11-20 difficulty:2, 21-30 difficulty:3.
 ZASADY (krytyczne):
-- "correct" musi być identycznym stringiem z "opts" (znak po znaku)
+- "correct" musi być identycznym stringiem z "opts" (znak po znaku) — dokładne dopasowanie!
 - 4 różne opcje; dystraktorzy różnią się o ±1-3 od wyniku, nigdy ujemne
-- "q": max 15 słów; porównanie ZAWSZE z obiema liczbami ("Większa: 7 czy 3?"); zero emoji
+- "q": max 15 słów; zero emoji; SPECJALNIE DLA PORÓWNYWANIA LICZB: format "Która liczba jest większa: 7 czy 3?" lub "Która jest mniejsza: 5 czy 8?" — ZAWSZE obie liczby w pytaniu
+- PORÓWNYWANIE SZCZEGÓLNIE: opcje to TYLKO liczby w stringach ("5", "8"), correct to też liczba string ("8"), żaden dodatkowy tekst
 - "explanation": 1-2 zdania, obrazowe (jabłka, palce, czekoladki)
 - "category": Dodawanie | Odejmowanie | Mnożenie | Liczenie | Porównywanie | Figury | Zadanie | Wzorzec | Brakujący czynnik
 - "id": q1..q${QUESTIONS_POOL_SIZE}; "difficulty": liczba 1|2|3
-- Maks. 3 pytania z tej samej kategorii w bloku 10`
+- Maks. 3 pytania z tej samej kategorii w bloku 10
+PRZYKŁAD PRAWIDŁOWEGO PORÓWNYWANIA:
+{"id":"q3","q":"Która liczba jest większa: 6 czy 4?","opts":["4","6","3","5"],"correct":"6","explanation":"6 to więcej niż 4. Pomyśl o palcach.","category":"Porównywanie","difficulty":1}`
 
   const data = await fetchFromProxy({
     model: 'claude-haiku-4-5-20251001',
