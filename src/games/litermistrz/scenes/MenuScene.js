@@ -20,19 +20,18 @@ export class MenuScene extends Phaser.Scene {
     this._drawGround(W, H)
 
     // Pani Sowa
-    this.owl = new PaniSowa(this, W / 2, H / 2 - 80)
-    this.owl.showBubble('Znajdź właściwą literę!')
+    this.owl = new PaniSowa(this, W / 2, H / 2 - 140)
 
-    // Tytuł
-    this.add.text(W / 2, 70, 'LiterMistrz', {
-      fontSize: '42px',
+    // Tytuł — mniejszy żeby mieścił się w chmurce
+    this.add.text(W / 2, 68, 'LiterMistrz', {
+      fontSize: '34px',
       fontFamily: 'Nunito, Arial, sans-serif',
       color: '#8E44AD',
       fontStyle: 'bold',
     }).setOrigin(0.5)
 
-    this.add.text(W / 2, 115, 'Nauka liter z Panią Sową', {
-      fontSize: '17px',
+    this.add.text(W / 2, 106, 'Nauka liter z Panią Sową', {
+      fontSize: '15px',
       fontFamily: 'Nunito, Arial, sans-serif',
       color: '#7F8C8D',
     }).setOrigin(0.5)

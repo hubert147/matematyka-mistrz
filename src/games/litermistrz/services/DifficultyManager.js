@@ -38,6 +38,7 @@ export class DifficultyManager {
       target:     letterData.letter,
       word:       letterData.word,
       emoji:      letterData.emoji,
+      image:      letterData.image || null,
       prompt:     letterData.pronunciation,
       options,
       correctIdx,

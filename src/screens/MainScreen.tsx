@@ -1,5 +1,3 @@
-import { useState } from 'react'
-
 interface Props {
   onSelectMathQuiz: () => void
   onSelectLiterQuiz: () => void
@@ -10,101 +8,94 @@ interface Props {
 }
 
 export function MainScreen({ onSelectMathQuiz, onSelectLiterQuiz, onSelectTutor, onSelectChat, onSelectStudy, onSelectLiterMistrz }: Props) {
-  const [showKonkursOptions, setShowKonkursOptions] = useState(false)
-
   return (
-    <div className="max-w-5xl mx-auto px-4 min-h-screen flex flex-col items-center py-12 w-full">
-      <div className="text-[6rem] sm:text-[8rem] animate-bounce mb-4 drop-shadow-xl">🦉</div>
-      <h1 className="text-4xl sm:text-6xl font-black text-orange-500 mb-2 text-center drop-shadow-sm">
-        Maja Się Uczy
-      </h1>
-      <p className="text-gray-500 font-bold mb-12 text-center text-lg">Witaj w świecie mądrej sowy! Co robimy?</p>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl">
-        {/* KONKURSY BOX */}
-        <div className="relative group">
-          <button 
-            onClick={() => setShowKonkursOptions(!showKonkursOptions)}
-            className={`w-full bg-white p-8 rounded-[2rem] shadow-sm border-4 transition-all flex flex-col items-center gap-4 ${
-              showKonkursOptions ? 'border-orange-500 shadow-lg scale-105' : 'border-orange-100 hover:border-orange-400 hover:shadow-lg'
-            }`}
-          >
-            <div className="text-7xl group-hover:scale-110 transition-transform duration-300">🏆</div>
-            <h2 className="text-3xl font-black text-orange-600 uppercase tracking-tight">Konkursy</h2>
-            <p className="text-gray-500 text-center font-medium leading-tight">Sprawdź co już umiesz!</p>
-          </button>
-          
-          {showKonkursOptions && (
-            <div className="absolute top-full left-0 right-0 mt-4 bg-white rounded-3xl shadow-2xl border-4 border-orange-500 p-4 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
-               <button 
-                 onClick={onSelectMathQuiz}
-                 className="w-full p-4 hover:bg-orange-50 rounded-2xl flex items-center gap-4 transition-colors mb-2 border-2 border-transparent hover:border-orange-200"
-               >
-                 <span className="text-4xl text-blue-500 bg-blue-50 w-16 h-16 flex items-center justify-center rounded-xl font-black italic">123</span>
-                 <div className="text-left">
-                   <div className="font-black text-gray-800 text-lg">Matematyka</div>
-                   <div className="text-xs text-gray-500 font-bold uppercase">Liczby i figury</div>
-                 </div>
-               </button>
-               <button
-                 onClick={onSelectLiterQuiz}
-                 className="w-full p-4 hover:bg-purple-50 rounded-2xl flex items-center gap-4 transition-colors border-2 border-transparent hover:border-purple-200"
-               >
-                 <span className="text-4xl text-purple-600 bg-purple-50 w-16 h-16 flex items-center justify-center rounded-xl font-black italic">ABC</span>
-                 <div className="text-left">
-                   <div className="font-black text-gray-800 text-lg">Literki</div>
-                   <div className="text-xs text-gray-500 font-bold uppercase">Czytanie i pisanie</div>
-                 </div>
-               </button>
-               {onSelectLiterMistrz && (
-                 <button
-                   onClick={onSelectLiterMistrz}
-                   className="w-full p-4 hover:bg-yellow-50 rounded-2xl flex items-center gap-4 transition-colors border-2 border-transparent hover:border-yellow-300"
-                 >
-                   <span className="text-4xl bg-yellow-50 w-16 h-16 flex items-center justify-center rounded-xl">🦉</span>
-                   <div className="text-left">
-                     <div className="font-black text-gray-800 text-lg">LiterMistrz</div>
-                     <div className="text-xs text-gray-500 font-bold uppercase">Gra z Panią Sową ✨</div>
-                   </div>
-                 </button>
-               )}
-            </div>
-          )}
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-sky-100 via-blue-50 to-indigo-100 flex flex-col items-center px-4 pt-8 pb-6">
 
-        {/* NAUKA BOX */}
-        <button 
-          onClick={onSelectStudy}
-          className="bg-white p-8 rounded-[2rem] shadow-sm border-4 border-green-100 hover:border-green-400 hover:shadow-lg transition-all flex flex-col items-center gap-4 group"
-        >
-          <div className="text-7xl group-hover:scale-110 transition-transform duration-300">📚</div>
-          <h2 className="text-3xl font-black text-green-600 uppercase tracking-tight">Nauka</h2>
-          <p className="text-gray-500 text-center font-medium leading-tight">Poznawaj nowe rzeczy!</p>
-        </button>
-
-        {/* SOWA BOX (merged Tutor & Chat or kept separate?) */}
-        <div className="md:col-span-2 lg:col-span-1 grid grid-cols-2 lg:grid-cols-1 gap-4">
-           {/* Mini Chat bit */}
-           <button 
-            onClick={onSelectChat}
-            className="bg-white p-6 rounded-[2rem] border-4 border-blue-50 hover:border-blue-400 transition-all flex flex-col items-center gap-2 group"
-          >
-            <div className="text-5xl group-hover:scale-110 transition-transform">🎤</div>
-            <div className="font-black text-blue-600 text-sm">ROZMAWIAJ</div>
-          </button>
-          
-          {/* Mini Tutor bit */}
-           <button 
-            onClick={onSelectTutor}
-            className="bg-white p-6 rounded-[2rem] border-4 border-purple-50 hover:border-purple-400 transition-all flex flex-col items-center gap-2 group"
-          >
-            <div className="text-5xl group-hover:scale-110 transition-transform">📸</div>
-            <div className="font-black text-purple-600 text-sm">TŁUMACZ</div>
-          </button>
-        </div>
+      {/* Nagłówek */}
+      <div className="flex flex-col items-center mb-8">
+        <div className="text-[5.5rem] leading-none drop-shadow-lg" style={{ animation: 'bounce 2s infinite' }}>🦉</div>
+        <h1 className="text-4xl font-black text-orange-500 mt-3 tracking-tight drop-shadow-sm">
+          Maja Się Uczy
+        </h1>
+        <p className="text-blue-400 font-bold mt-1 text-base">Co dziś robimy? ✨</p>
       </div>
 
-      <footer className="mt-auto pt-12 text-gray-300 font-medium text-sm italic">
+      {/* Siatka 2x2 */}
+      <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
+
+        {/* CYFERKI */}
+        <button
+          onClick={onSelectMathQuiz}
+          className="flex flex-col items-center justify-center gap-2 p-5 rounded-[1.75rem] shadow-lg active:scale-95 transition-transform duration-100"
+          style={{ background: 'linear-gradient(135deg, #60a5fa, #2563eb)' }}
+        >
+          <span className="text-[3.5rem] leading-none drop-shadow">🔢</span>
+          <span className="text-lg font-black text-white tracking-tight">Cyferki</span>
+          <span className="text-[0.65rem] font-bold text-blue-100 uppercase tracking-wide">Matematyka</span>
+        </button>
+
+        {/* LITERKI */}
+        <button
+          onClick={onSelectLiterQuiz}
+          className="flex flex-col items-center justify-center gap-2 p-5 rounded-[1.75rem] shadow-lg active:scale-95 transition-transform duration-100"
+          style={{ background: 'linear-gradient(135deg, #c084fc, #9333ea)' }}
+        >
+          <span className="text-[3.5rem] leading-none drop-shadow">🔤</span>
+          <span className="text-lg font-black text-white tracking-tight">Literki</span>
+          <span className="text-[0.65rem] font-bold text-purple-100 uppercase tracking-wide">Quiz z literami</span>
+        </button>
+
+        {/* NAUKA */}
+        <button
+          onClick={onSelectStudy}
+          className="flex flex-col items-center justify-center gap-2 p-5 rounded-[1.75rem] shadow-lg active:scale-95 transition-transform duration-100"
+          style={{ background: 'linear-gradient(135deg, #4ade80, #16a34a)' }}
+        >
+          <span className="text-[3.5rem] leading-none drop-shadow">📚</span>
+          <span className="text-lg font-black text-white tracking-tight">Nauka</span>
+          <span className="text-[0.65rem] font-bold text-green-100 uppercase tracking-wide">Ćwiczenia</span>
+        </button>
+
+        {/* GRY */}
+        <button
+          onClick={onSelectLiterMistrz}
+          className="flex flex-col items-center justify-center gap-2 p-5 rounded-[1.75rem] shadow-lg active:scale-95 transition-transform duration-100"
+          style={{ background: 'linear-gradient(135deg, #fb923c, #ea580c)' }}
+        >
+          <span className="text-[3.5rem] leading-none drop-shadow">🎮</span>
+          <span className="text-lg font-black text-white tracking-tight">Gry</span>
+          <span className="text-[0.65rem] font-bold text-orange-100 uppercase tracking-wide">LiterMistrz 🦉</span>
+        </button>
+
+      </div>
+
+      {/* DODATKI */}
+      <div className="w-full max-w-xs mt-4">
+        <div
+          className="rounded-[1.75rem] shadow-lg p-4 flex gap-3"
+          style={{ background: 'linear-gradient(135deg, #2dd4bf, #0891b2)' }}
+        >
+          <button
+            onClick={onSelectChat}
+            className="flex-1 flex flex-col items-center gap-1 py-3 rounded-2xl active:scale-95 transition-transform duration-100"
+            style={{ background: 'rgba(255,255,255,0.18)' }}
+          >
+            <span className="text-[2.8rem] leading-none">🎤</span>
+            <span className="text-sm font-black text-white">Mikrofon</span>
+          </button>
+          <button
+            onClick={onSelectTutor}
+            className="flex-1 flex flex-col items-center gap-1 py-3 rounded-2xl active:scale-95 transition-transform duration-100"
+            style={{ background: 'rgba(255,255,255,0.18)' }}
+          >
+            <span className="text-[2.8rem] leading-none">📸</span>
+            <span className="text-sm font-black text-white">Aparat</span>
+          </button>
+        </div>
+        <p className="text-center text-teal-500 font-bold text-xs mt-2 uppercase tracking-widest">Dodatki</p>
+      </div>
+
+      <footer className="mt-auto pt-8 text-gray-300 font-medium text-xs italic">
         Stworzone z miłością dla Mai ❤️
       </footer>
     </div>

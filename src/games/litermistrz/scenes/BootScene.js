@@ -49,11 +49,40 @@ export class BootScene extends Phaser.Scene {
       bar.fillRoundedRect(W / 2 - 150, H / 2 + 80, 300 * value, 18, 9)
     })
 
-    // Brak prawdziwych assetów — gra rysuje wszystko graficznie
-    // Tutaj możemy załadować opcjonalne dźwięki/obrazki jeśli istnieją
-    this.load.setPath('/voice/')
-    // Nie robimy load.audio() bo pliki mogą nie istnieć jeszcze
-    // AudioManager korzysta z Web Audio API jako fallback
+    // Załaduj obrazki liter
+    const letterImages = [
+      ['img_a',        '/images/letters/a_arbuz.png'],
+      ['img_b',        '/images/letters/b_banan.png'],
+      ['img_c',        '/images/letters/c_cytryna.png'],
+      ['img_d',        '/images/letters/d_dom.png'],
+      ['img_e',        '/images/letters/e_ekran.png'],
+      ['img_f',        '/images/letters/f_foka.png'],
+      ['img_g',        '/images/letters/g_gitara.png'],
+      ['img_h',        '/images/letters/h_herbata.png'],
+      ['img_i',        '/images/letters/i_igla.png'],
+      ['img_j',        '/images/letters/j_jablko.png'],
+      ['img_k',        '/images/letters/k_kot.png'],
+      ['img_l',        '/images/letters/l_lew.png'],
+      ['img_lodka',    '/images/letters/l_lodka.png'],
+      ['img_m',        '/images/letters/m_mis.png'],
+      ['img_n',        '/images/letters/n_noga.png'],
+      ['img_o',        '/images/letters/o_osa.png'],
+      ['img_p',        '/images/letters/p_pies.png'],
+      ['img_r',        '/images/letters/r_rower.png'],
+      ['img_s',        '/images/letters/s_slon.png'],
+      ['img_t',        '/images/letters/t_torba.png'],
+      ['img_u',        '/images/letters/u_ucho.png'],
+      ['img_w',        '/images/letters/w_woda.png'],
+      ['img_z',        '/images/letters/z_zebra.png'],
+      ['img_a_zab',    '/images/letters/a_zab.png'],
+      ['img_c_cma',    '/images/letters/c_cma.png'],
+      ['img_n_kon',    '/images/letters/n_kon.png'],
+      ['img_o_osemka', '/images/letters/o_osemka.png'],
+      ['img_s_slimak', '/images/letters/s_slimak.png'],
+      ['img_z_zrodlo', '/images/letters/z_zrodlo.png'],
+      ['img_z_zaba',   '/images/letters/z_zaba.png'],
+    ]
+    letterImages.forEach(([key, path]) => this.load.image(key, path))
   }
 
   create() {

@@ -4,6 +4,7 @@ import { AudioManager } from '../objects/AudioManager.js'
 import { DifficultyManager } from '../services/DifficultyManager.js'
 import { SaveSystem } from '../services/SaveSystem.js'
 import { VOICE_PROMPTS } from '../data/questions.js'
+import { getImageKey } from '../data/letters.js'
 
 const TOTAL_ROUNDS = 10
 const NEXT_DELAY   = 1500   // ms po odpowiedzi
@@ -34,31 +35,30 @@ export class GameScene extends Phaser.Scene {
     this._drawClouds(W, H)
     this._drawGround(W, H)
 
-    // Pani Sowa
-    this.owl = new PaniSowa(this, W / 2, 155)
+    // Pasek postępu (góra)
+    this._drawProgressBar()
 
     // Przycisk wróć
     this._drawBackButton()
 
-    // Przycisk wyciszenia
+    // Pani Sowa — wyżej żeby zmieścił się głośnik pod nią
+    this.owl = new PaniSowa(this, W / 2, 130)
+
+    // Przycisk wyciszenia — pod sową, wyśrodkowany
     this._drawMuteButton()
 
-    // Pasek postępu (góra)
-    this._drawProgressBar()
-
-    // Label pytania
-    this.questionLabel = this.add.text(W / 2, 275, '', {
-      fontSize: '22px',
+    // Polecenie — BEZ litery, nad obrazkiem
+    this.questionLabel = this.add.text(W / 2, 228, 'Posłuchaj i dotknij literę!', {
+      fontSize: '18px',
       fontFamily: 'Nunito, Arial, sans-serif',
-      color: '#2C3E50',
+      color: '#5D6D7E',
       fontStyle: 'bold',
     }).setOrigin(0.5)
 
-    // Label emoji/słowa
-    this.wordLabel = this.add.text(W / 2, 308, '', {
-      fontSize: '18px',
-      fontFamily: 'Nunito, Arial, sans-serif',
-      color: '#7F8C8D',
+    // Obrazek/emoji podpowiedzi — poniżej napisu
+    this.hintImage = null
+    this.hintEmoji = this.add.text(W / 2, 315, '', {
+      fontSize: '72px',
     }).setOrigin(0.5)
 
     // Wynik
@@ -99,13 +99,9 @@ export class GameScene extends Phaser.Scene {
     // Zaktualizuj pasek postępu
     this._updateProgressBar()
 
-    // Zaktualizuj pytanie
-    const prompt = VOICE_PROMPTS[this.currentQ.target]
-    this.questionLabel.setText(`Znajdź literę:  ${this.currentQ.target}`)
-    this.wordLabel.setText(prompt?.hint || '')
+    // Zaktualizuj obrazek podpowiedzi — BEZ litery
+    this._showHint(this.currentQ)
 
-    // Dymek u sowy
-    this.owl.showBubble(this.currentQ.target)
     this.owl.setThinking()
 
     // Głos
@@ -117,18 +113,60 @@ export class GameScene extends Phaser.Scene {
     this._showButtons(this.currentQ)
   }
 
+  // ──────────────────────── OBRAZEK PODPOWIEDZI ───────────────────────────────
+
+  _showHint(question) {
+    // Usuń poprzedni obrazek jeśli był
+    if (this.hintImage) {
+      this.hintImage.destroy()
+      this.hintImage = null
+    }
+
+    const imgKey = getImageKey(question.image)
+
+    if (imgKey && this.textures.exists(imgKey)) {
+      // Pokaż obrazek
+      this.hintEmoji.setVisible(false)
+      this.hintImage = this.add.image(this.W / 2, 318, imgKey)
+
+      // Skaluj do max 120x120px zachowując proporcje
+      const maxSize = 120
+      const scaleX  = maxSize / this.hintImage.width
+      const scaleY  = maxSize / this.hintImage.height
+      const scale   = Math.min(scaleX, scaleY, 1)
+      this.hintImage.setScale(scale)
+
+      // Animacja wejścia
+      this.hintImage.setAlpha(0).setScale(scale * 0.6)
+      this.tweens.add({
+        targets: this.hintImage,
+        alpha: 1,
+        scaleX: scale,
+        scaleY: scale,
+        duration: 250,
+        ease: 'Back.Out',
+      })
+    } else {
+      // Fallback — emoji
+      this.hintEmoji.setVisible(true)
+      this.hintEmoji.setText(question.emoji)
+      this.hintEmoji.setAlpha(0)
+      this.tweens.add({ targets: this.hintEmoji, alpha: 1, duration: 200 })
+    }
+  }
+
   // ────────────────────────── PRZYCISKI ───────────────────────────────────────
 
   _showButtons(question) {
     const W = this.W
     const H = this.H
 
-    // 2×2 grid — wyśrodkowany
+    // 2×2 grid — wyśrodkowany, poniżej podpowiedzi
     const btnSize = 155
     const gap     = 18
     const gridW   = btnSize * 2 + gap
     const startX  = (W - gridW) / 2 + btnSize / 2
-    const startY  = 360
+    const startY  = 455
 
     const positions = [
       { x: startX,          y: startY },
@@ -190,7 +228,6 @@ export class GameScene extends Phaser.Scene {
 
     this.buttons[idx]?.showCorrect()
     this.owl.setHappy()
-    this.owl.showBubble('🌟 Brawo!')
 
     this.audio.playCorrect()
     this.time.delayedCall(180, () => this.audio.speak('Brawo!'))
@@ -218,7 +255,6 @@ export class GameScene extends Phaser.Scene {
 
     this.buttons[idx]?.showWrong()
     this.owl.setSad()
-    this.owl.showBubble('Spróbuj jeszcze raz!')
 
     this.audio.playWrong()
     this.time.delayedCall(200, () => this.audio.speak('Spróbuj jeszcze raz!'))
@@ -397,9 +433,10 @@ export class GameScene extends Phaser.Scene {
 
   _drawMuteButton() {
     const W = this.W
-    const muteLabel = this.add.text(W - 14, 54, this.audio.muted ? '🔇' : '🔊', {
-      fontSize: '24px',
-    }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true })
+    // Pod sową (sowa jest na y=130, ma ok 80px — dół ~y=180)
+    const muteLabel = this.add.text(W / 2, 200, this.audio.muted ? '🔇' : '🔊', {
+      fontSize: '28px',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true })
 
     muteLabel.on('pointerdown', () => {
       const nowMuted = this.audio.toggle()
