@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Laboratorium Pani Sowy</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@400;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: 'Fredoka', sans-serif;
+    background: #0d1117;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  canvas { display: block; }
+
+  #ui-layer {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  #hud {
+    position: absolute;
+    top: calc(10px + env(safe-area-inset-top, 0px));
+    left: 10px; right: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .hud-box {
+    background: rgba(13, 17, 23, 0.85);
+    backdrop-filter: blur(8px);
+    border-radius: 14px;
+    padding: 8px 14px;
+    color: white;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    border: 2px solid rgba(56, 189, 248, 0.2);
+  }
+
+  #btn-back {
+    pointer-events: auto;
+    background: rgba(13,17,23,0.85);
+    backdrop-filter: blur(8px);
+    border: 2px solid rgba(56,189,248,0.2);
+    border-radius: 14px;
+    padding: 8px 14px;
+    color: white;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #target-card {
+    position: absolute;
+    top: calc(58px + env(safe-area-inset-top, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(13, 17, 23, 0.9);
+    backdrop-filter: blur(10px);
+    border-radius: 18px;
+    padding: 10px 20px;
+    border: 2px solid rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  #target-swatch {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    border: 3px solid rgba(255,255,255,0.2);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    flex-shrink: 0;
+  }
+
+  #target-name {
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: white;
+  }
+
+  #target-hint {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+  }
+
+  #sliders-panel {
+    position: absolute;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(13, 17, 23, 0.92);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 14px 20px 12px;
+    border: 2px solid rgba(255,255,255,0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    pointer-events: auto;
+    width: min(380px, 94vw);
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .slider-dot {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.2);
+    flex-shrink: 0;
+  }
+
+  .slider-label {
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+    width: 56px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  input[type="range"] {
+    flex: 1;
+    height: 8px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255,255,255,0.08);
+    border-radius: 4px;
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+
+  #slider-r::-webkit-slider-thumb { background: #ef4444; }
+  #slider-y::-webkit-slider-thumb { background: #facc15; }
+  #slider-b::-webkit-slider-thumb { background: #3b82f6; }
+
+  .slider-value {
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: white;
+    width: 28px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 2px;
+  }
+
+  .action-btn {
+    flex: 1;
+    padding: 11px;
+    border-radius: 14px;
+    border: 2px solid rgba(255,255,255,0.15);
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .action-btn:active { transform: scale(0.95); }
+
+  #btn-mix {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+  }
+
+  #btn-reset {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.7);
+  }
+
+  #result-popup {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    background: rgba(13, 17, 23, 0.96);
+    backdrop-filter: blur(12px);
+    border-radius: 24px;
+    padding: 28px;
+    border: 3px solid rgba(255,255,255,0.1);
+    text-align: center;
+    z-index: 100;
+    pointer-events: auto;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    min-width: 270px;
+    max-width: 90vw;
+  }
+
+  #result-popup.visible {
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  #result-popup .result-icon { font-size: 52px; margin-bottom: 6px; }
+
+  #result-popup h2 {
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 26px;
+    color: white;
+    margin-bottom: 4px;
+  }
+
+  #result-popup .result-sub {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 15px;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 14px;
+  }
+
+  .compare-row {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+
+  .compare-swatch {
+    width: 56px; height: 56px;
+    border-radius: 12px;
+    border: 3px solid rgba(255,255,255,0.2);
+  }
+
+  .compare-label {
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 4px;
+  }
+
+  .compare-arrow { font-size: 22px; color: rgba(255,255,255,0.3); }
+
+  #screen-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    pointer-events: auto;
+    background: radial-gradient(ellipse at center, #0d1f2d 0%, #0d1117 70%);
+    padding: 20px;
+  }
+
+  #screen-overlay.hidden { display: none; }
+
+  #screen-overlay h1 {
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 34px;
+    color: white;
+    text-align: center;
+    text-shadow: 0 0 30px rgba(56, 189, 248, 0.4);
+    margin-bottom: 8px;
+  }
+
+  #screen-overlay .subtitle {
+    font-size: 16px;
+    color: #7dd3fc;
+    margin-bottom: 24px;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  .big-icon {
+    font-size: 72px;
+    margin-bottom: 14px;
+    animation: labBounce 2s ease-in-out infinite;
+  }
+
+  @keyframes labBounce {
+    0%, 100% { transform: translateY(0) rotate(-3deg); }
+    50% { transform: translateY(-10px) rotate(3deg); }
+  }
+
+  .start-btn {
+    padding: 14px 40px;
+    border-radius: 18px;
+    border: 3px solid rgba(16, 185, 129, 0.3);
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 8px 30px rgba(16, 185, 129, 0.3);
+    -webkit-tap-highlight-color: transparent;
+    margin-bottom: 12px;
+  }
+
+  .start-btn:hover { transform: scale(1.05); }
+
+  .back-overlay-btn {
+    padding: 10px 28px;
+    border-radius: 14px;
+    border: 2px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.6);
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #level-info {
+    color: #67e8f9;
+    font-size: 14px;
+    margin-bottom: 14px;
+    font-family: 'Baloo 2', sans-serif;
+  }
+
+  .stars { font-size: 34px; margin-bottom: 8px; letter-spacing: 6px; }
+</style>
+</head>
+<body>
+
+<!-- START SCREEN -->
+<div id="screen-overlay">
+  <div class="big-icon">🦉🧪</div>
+  <h1>Laboratorium Pani Sowy</h1>
+  <div class="subtitle">Mieszaj kolory w magicznej kolbie!<br>Użyj suwaków żeby stworzyć kolor z karty.</div>
+  <div id="level-info">Poziom 1 — Proste kolory</div>
+  <button class="start-btn" id="start-btn">🧪 Do laboratorium!</button>
+  <button class="back-overlay-btn" id="back-overlay-btn">← Wróć do menu</button>
+</div>
+
+<!-- CANVAS -->
+<canvas id="game"></canvas>
+
+<!-- HUD -->
+<div id="ui-layer">
+  <div id="hud">
+    <button id="btn-back">← Menu</button>
+    <div class="hud-box">🧪 Lvl <span id="level-num">1</span></div>
+    <div class="hud-box">⭐ <span id="score">0</span></div>
+    <div class="hud-box">🎯 <span id="round-num">1</span>/5</div>
+  </div>
+
+  <div id="target-card">
+    <div id="target-swatch"></div>
+    <div>
+      <div id="target-name">Pomarańczowy</div>
+      <div id="target-hint">Zmieszaj kolory!</div>
+    </div>
+  </div>
+
+  <div id="sliders-panel">
+    <div class="slider-row">
+      <div class="slider-dot" style="background:#ef4444"></div>
+      <div class="slider-label">Czerw.</div>
+      <input type="range" id="slider-r" min="0" max="100" value="0">
+      <div class="slider-value" id="val-r">0</div>
+    </div>
+    <div class="slider-row">
+      <div class="slider-dot" style="background:#facc15"></div>
+      <div class="slider-label">Żółty</div>
+      <input type="range" id="slider-y" min="0" max="100" value="0">
+      <div class="slider-value" id="val-y">0</div>
+    </div>
+    <div class="slider-row">
+      <div class="slider-dot" style="background:#3b82f6"></div>
+      <div class="slider-label">Niebieski</div>
+      <input type="range" id="slider-b" min="0" max="100" value="0">
+      <div class="slider-value" id="val-b">0</div>
+    </div>
+    <div class="btn-row">
+      <button class="action-btn" id="btn-reset">🔄 Wyczyść</button>
+      <button class="action-btn" id="btn-mix">✅ Sprawdź!</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT POPUP -->
+<div id="result-popup">
+  <div class="result-icon" id="result-icon">🌟</div>
+  <h2 id="result-title">Super!</h2>
+  <div class="result-sub" id="result-sub"></div>
+  <div class="compare-row">
+    <div>
+      <div class="compare-swatch" id="compare-target"></div>
+      <div class="compare-label">Cel</div>
+    </div>
+    <div class="compare-arrow">→</div>
+    <div>
+      <div class="compare-swatch" id="compare-yours"></div>
+      <div class="compare-label">Twój</div>
+    </div>
+  </div>
+  <button class="action-btn" id="btn-next" style="background:linear-gradient(135deg,#10b981,#059669);color:white;width:100%">
+    ▶ Dalej!
+  </button>
+</div>
+
+<script>
+// 🦉🧪 LABORATORIUM PANI SOWY — Color Mixing Game
+// RYB subtractive color mixing (paint-style)
+
+function goBack() {
+  window.parent.postMessage({ type: 'laboratorium:back' }, '*');
+}
+
+document.getElementById('btn-back').onclick = goBack;
+document.getElementById('back-overlay-btn').onclick = goBack;
+
+// ============================================================
+// COLOR CHALLENGES
+// ============================================================
+const COLOR_CHALLENGES = [
+  // Level 1: Simple 2-color mixes
+  [
+    { name: "Pomarańczowy", hint: "🔴 + 🟡", r: 80, y: 80, b: 0, tolerance: 25 },
+    { name: "Zielony",      hint: "🟡 + 🔵", r: 0,  y: 80, b: 80, tolerance: 25 },
+    { name: "Fioletowy",    hint: "🔴 + 🔵", r: 80, y: 0,  b: 80, tolerance: 25 },
+    { name: "Czerwony",     hint: "Tylko 🔴!", r: 90, y: 0, b: 0, tolerance: 20 },
+    { name: "Niebieski",    hint: "Tylko 🔵!", r: 0,  y: 0, b: 90, tolerance: 20 },
+  ],
+  // Level 2: Varied amounts
+  [
+    { name: "Jasny pomarańcz", hint: "Dużo 🟡, trochę 🔴",           r: 40, y: 90, b: 0,  tolerance: 22 },
+    { name: "Ciemna zieleń",   hint: "Dużo 🔵, trochę 🟡",           r: 0,  y: 40, b: 85, tolerance: 22 },
+    { name: "Różowy",          hint: "Trochę 🔴, mało 🔵",           r: 60, y: 0,  b: 20, tolerance: 22 },
+    { name: "Oliwkowy",        hint: "Dużo 🟡, trochę 🔴, mało 🔵", r: 30, y: 70, b: 20, tolerance: 22 },
+    { name: "Lawendowy",       hint: "🔴 i 🔵, mało 🟡",            r: 50, y: 10, b: 60, tolerance: 22 },
+  ],
+  // Level 3: Precise mixing
+  [
+    { name: "Brązowy",    hint: "Wszystkie trzy!",              r: 60, y: 50, b: 40, tolerance: 20 },
+    { name: "Turkusowy",  hint: "Dużo 🔵, trochę 🟡",          r: 0,  y: 50, b: 90, tolerance: 20 },
+    { name: "Malinowy",   hint: "Dużo 🔴, mało 🔵",            r: 90, y: 0,  b: 30, tolerance: 20 },
+    { name: "Khaki",      hint: "🟡 z odrobiną 🔴 i 🔵",      r: 25, y: 65, b: 15, tolerance: 20 },
+    { name: "Szary",      hint: "Wszystkie po równo, mało",    r: 35, y: 35, b: 35, tolerance: 18 },
+  ],
+  // Level 4: Expert
+  [
+    { name: "Łososiowy",    hint: "🔴 dużo, 🟡 trochę, 🔵 mało",  r: 75, y: 35, b: 15, tolerance: 18 },
+    { name: "Morski",       hint: "🔵 dużo, 🟡 średnio",           r: 10, y: 45, b: 80, tolerance: 18 },
+    { name: "Burgund",      hint: "🔴 dużo, 🔵 średnio, 🟡 mało",  r: 80, y: 15, b: 45, tolerance: 18 },
+    { name: "Pistacjowy",   hint: "🟡 dużo, 🔵 średnio, 🔴 mało",  r: 15, y: 70, b: 40, tolerance: 18 },
+    { name: "Karmelowy",    hint: "🔴 i 🟡 dużo, 🔵 trochę",      r: 65, y: 60, b: 25, tolerance: 18 },
+  ],
+];
+
+// ============================================================
+// RYB → RGB Conversion (subtractive color mixing)
+// ============================================================
+function rybToRgb(r, y, b) {
+  const rr = r / 100, yy = y / 100, bb = b / 100;
+
+  const white  = [1, 1, 1];
+  const red    = [1, 0, 0];
+  const yellow = [1, 1, 0];
+  const blue   = [0.163, 0.373, 0.6];
+  const orange = [1, 0.5, 0];
+  const green  = [0, 0.66, 0.2];
+  const purple = [0.5, 0, 0.5];
+  const black  = [0.2, 0.094, 0.0];
+
+  function lerp(t, a, b_) { return a + t * (b_ - a); }
+
+  function channel(ch) {
+    const c000 = white[ch],  c100 = red[ch],    c010 = yellow[ch], c001 = blue[ch];
+    const c110 = orange[ch], c101 = purple[ch], c011 = green[ch],  c111 = black[ch];
+    const c00 = lerp(rr, c000, c100), c01 = lerp(rr, c001, c101);
+    const c10 = lerp(rr, c010, c110), c11 = lerp(rr, c011, c111);
+    return lerp(bb, lerp(yy, c00, c10), lerp(yy, c01, c11));
+  }
+
+  return [
+    Math.round(channel(0) * 255),
+    Math.round(channel(1) * 255),
+    Math.round(channel(2) * 255),
+  ];
+}
+
+function rgbStr(rgb) { return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`; }
+
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  level: 1, score: 0, round: 0, roundsPerLevel: 5,
+  gameRunning: false, currentChallenge: null,
+  sliderR: 0, sliderY: 0, sliderB: 0,
+  mixedColor: [255, 255, 255],
+  bubbles: [],
+  liquidLevel: 0, targetLiquidLevel: 0,
+  shelfItems: [],
+};
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+let W, H;
+
+function resize() {
+  canvas.width = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+  canvas.height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  W = canvas.width; H = canvas.height;
+}
+window.addEventListener("resize", resize);
+if (window.visualViewport) window.visualViewport.addEventListener("resize", resize);
+resize();
+
+// ============================================================
+// SLIDERS
+// ============================================================
+const sliderR = document.getElementById("slider-r");
+const sliderY = document.getElementById("slider-y");
+const sliderB = document.getElementById("slider-b");
+
+function onSliderChange() {
+  state.sliderR = parseInt(sliderR.value);
+  state.sliderY = parseInt(sliderY.value);
+  state.sliderB = parseInt(sliderB.value);
+
+  document.getElementById("val-r").textContent = state.sliderR;
+  document.getElementById("val-y").textContent = state.sliderY;
+  document.getElementById("val-b").textContent = state.sliderB;
+
+  state.mixedColor = rybToRgb(state.sliderR, state.sliderY, state.sliderB);
+
+  const total = state.sliderR + state.sliderY + state.sliderB;
+  state.targetLiquidLevel = Math.min(total / 150, 1);
+
+  if (total > 10) spawnBubble();
+}
+
+sliderR.addEventListener("input", onSliderChange);
+sliderY.addEventListener("input", onSliderChange);
+sliderB.addEventListener("input", onSliderChange);
+
+// ============================================================
+// BUBBLES
+// ============================================================
+function spawnBubble() {
+  const flaskCX = W / 2;
+  const flaskBottom = H * 0.72;
+  const flaskWidth = 90;
+  for (let i = 0; i < 2; i++) {
+    state.bubbles.push({
+      x: flaskCX + (Math.random() - 0.5) * flaskWidth,
+      y: flaskBottom - Math.random() * 30,
+      r: 3 + Math.random() * 6,
+      vy: -0.3 - Math.random() * 0.8,
+      vx: (Math.random() - 0.5) * 0.5,
+      life: 60 + Math.random() * 40,
+      wobblePhase: Math.random() * Math.PI * 2,
+    });
+  }
+}
+
+function spawnAmbientBubbles() {
+  if (state.bubbles.length < 15 && state.targetLiquidLevel > 0.1) {
+    if (Math.random() < 0.05) spawnBubble();
+  }
+}
+
+// ============================================================
+// SHELF ITEMS
+// ============================================================
+function generateShelfItems() {
+  state.shelfItems = [];
+  const types = ["beaker", "erlenmeyer", "testTube", "book", "plant", "beaker"];
+  for (let i = 0; i < 6; i++) {
+    state.shelfItems.push({
+      type: types[i],
+      xFrac: (0.06 + i * 0.176),
+      color: `hsl(${i * 55}, 60%, 50%)`,
+    });
+  }
+}
+
+// ============================================================
+// CHECK ANSWER
+// ============================================================
+document.getElementById("btn-mix").addEventListener("click", () => {
+  if (!state.gameRunning || !state.currentChallenge) return;
+
+  const ch = state.currentChallenge;
+  const totalDiff = Math.abs(state.sliderR - ch.r) + Math.abs(state.sliderY - ch.y) + Math.abs(state.sliderB - ch.b);
+
+  const perfect = totalDiff <= ch.tolerance * 0.5;
+  const good    = totalDiff <= ch.tolerance;
+  const ok      = totalDiff <= ch.tolerance * 1.8;
+
+  const popup = document.getElementById("result-popup");
+  const targetRgb = rybToRgb(ch.r, ch.y, ch.b);
+
+  document.getElementById("compare-target").style.background = rgbStr(targetRgb);
+  document.getElementById("compare-yours").style.background  = rgbStr(state.mixedColor);
+
+  if (perfect) {
+    document.getElementById("result-icon").textContent  = "🌟";
+    document.getElementById("result-title").textContent = "Idealnie!";
+    document.getElementById("result-sub").textContent   = `Perfekcyjne mieszanie! +${30 + state.level * 10} pkt`;
+    state.score += 30 + state.level * 10;
+  } else if (good) {
+    document.getElementById("result-icon").textContent  = "😊";
+    document.getElementById("result-title").textContent = "Świetnie!";
+    document.getElementById("result-sub").textContent   = `Bardzo blisko! +${20 + state.level * 5} pkt`;
+    state.score += 20 + state.level * 5;
+  } else if (ok) {
+    document.getElementById("result-icon").textContent  = "👍";
+    document.getElementById("result-title").textContent = "Nieźle!";
+    document.getElementById("result-sub").textContent   = `Prawie! +10 pkt`;
+    state.score += 10;
+  } else {
+    document.getElementById("result-icon").textContent  = "🤔";
+    document.getElementById("result-title").textContent = "Spróbuj jeszcze!";
+    document.getElementById("result-sub").textContent   = "Porównaj kolory i popraw suwaki";
+    popup.classList.add("visible");
+    document.getElementById("btn-next").textContent = "🔄 Poprawiam!";
+    document.getElementById("btn-next").onclick = () => popup.classList.remove("visible");
+    return;
+  }
+
+  popup.classList.add("visible");
+  state.round++;
+  document.getElementById("round-num").textContent = Math.min(state.round + 1, state.roundsPerLevel);
+  document.getElementById("score").textContent = state.score;
+
+  if (state.round >= state.roundsPerLevel) {
+    document.getElementById("btn-next").textContent = "🎊 Następny poziom!";
+    document.getElementById("btn-next").onclick = () => {
+      popup.classList.remove("visible");
+      state.level++;
+      state.round = 0;
+      if (state.level > COLOR_CHALLENGES.length) winGame();
+      else nextChallenge();
+    };
+  } else {
+    document.getElementById("btn-next").textContent = "▶ Następny kolor!";
+    document.getElementById("btn-next").onclick = () => {
+      popup.classList.remove("visible");
+      nextChallenge();
+    };
+  }
+});
+
+document.getElementById("btn-reset").addEventListener("click", () => {
+  sliderR.value = 0; sliderY.value = 0; sliderB.value = 0;
+  onSliderChange();
+});
+
+// ============================================================
+// CHALLENGE FLOW
+// ============================================================
+function nextChallenge() {
+  const levelIdx = Math.min(state.level - 1, COLOR_CHALLENGES.length - 1);
+  const pool = COLOR_CHALLENGES[levelIdx];
+  state.currentChallenge = pool[state.round % pool.length];
+
+  const targetRgb = rybToRgb(state.currentChallenge.r, state.currentChallenge.y, state.currentChallenge.b);
+  document.getElementById("target-swatch").style.background = rgbStr(targetRgb);
+  document.getElementById("target-name").textContent  = state.currentChallenge.name;
+  document.getElementById("target-hint").textContent  = state.currentChallenge.hint;
+  document.getElementById("level-num").textContent    = state.level;
+  document.getElementById("round-num").textContent    = state.round + 1;
+  document.getElementById("score").textContent        = state.score;
+
+  sliderR.value = 0; sliderY.value = 0; sliderB.value = 0;
+  onSliderChange();
+  state.bubbles = [];
+}
+
+function startGame() {
+  state.gameRunning = true;
+  state.level = 1; state.score = 0; state.round = 0;
+  document.getElementById("screen-overlay").classList.add("hidden");
+  generateShelfItems();
+  nextChallenge();
+}
+
+function winGame() {
+  state.gameRunning = false;
+  const overlay = document.getElementById("screen-overlay");
+  overlay.classList.remove("hidden");
+  overlay.innerHTML = `
+    <div class="big-icon">🦉🏆</div>
+    <div class="stars">⭐⭐⭐</div>
+    <h1>Mistrz Kolorów!</h1>
+    <div class="subtitle">Ukończyłeś wszystkie poziomy!<br>Wynik: ${state.score} punktów</div>
+    <button class="start-btn" id="start-btn">🔄 Zagraj ponownie!</button>
+    <button class="back-overlay-btn" id="back-overlay-btn2">← Wróć do menu</button>
+  `;
+  document.getElementById("start-btn").onclick = startGame;
+  document.getElementById("back-overlay-btn2").onclick = goBack;
+}
+
+// ============================================================
+// DRAW
+// ============================================================
+function draw() {
+  // background
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, "#0d1f2d");
+  bg.addColorStop(0.6, "#0d1117");
+  bg.addColorStop(1, "#0a0e14");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // wall tiles
+  ctx.strokeStyle = "rgba(255,255,255,0.02)";
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H * 0.5); ctx.stroke(); }
+  for (let y = 0; y < H * 0.5; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+
+  // shelf
+  const shelfY = H * 0.18;
+  ctx.fillStyle = "#1a2332"; ctx.fillRect(0, shelfY, W, 12);
+  ctx.fillStyle = "#243447"; ctx.fillRect(0, shelfY + 12, W, 4);
+
+  for (const item of state.shelfItems) {
+    drawLabItem(item.xFrac * W, shelfY, item.type, item.color);
+  }
+
+  // table
+  const tableY = H * 0.73;
+  ctx.fillStyle = "#1e293b"; ctx.fillRect(0, tableY, W, H - tableY);
+  ctx.fillStyle = "#334155"; ctx.fillRect(0, tableY, W, 6);
+
+  drawFlask(W / 2, tableY);
+  drawOwlScientist(W / 2 + Math.min(150, W * 0.25), tableY - 20);
+  drawPaintTube(W / 2 - Math.min(160, W * 0.22), tableY - 10, "#ef4444", "C");
+  drawPaintTube(W / 2 - Math.min(205, W * 0.28), tableY - 5,  "#facc15", "Ż");
+  drawPaintTube(W / 2 - Math.min(250, W * 0.34), tableY - 8,  "#3b82f6", "N");
+}
+
+// ============================================================
+// DRAW FLASK
+// ============================================================
+function drawFlask(cx, tableY) {
+  const flaskTop = tableY - Math.min(200, H * 0.28);
+  const flaskBottom = tableY - 6;
+  const neckW = 22, bodyW = 100;
+  const neckH = 60;
+  const bodyH = flaskBottom - flaskTop - neckH;
+
+  state.liquidLevel += (state.targetLiquidLevel - state.liquidLevel) * 0.05;
+
+  ctx.save();
+
+  // flask outline
+  ctx.strokeStyle = "rgba(148, 210, 255, 0.3)";
+  ctx.lineWidth = 3;
+  ctx.fillStyle = "rgba(148, 210, 255, 0.04)";
+  ctx.beginPath();
+  ctx.moveTo(cx - neckW/2, flaskTop);
+  ctx.lineTo(cx - neckW/2, flaskTop + neckH);
+  ctx.lineTo(cx - bodyW/2, flaskBottom);
+  ctx.lineTo(cx + bodyW/2, flaskBottom);
+  ctx.lineTo(cx + neckW/2, flaskTop + neckH);
+  ctx.lineTo(cx + neckW/2, flaskTop);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  // clip for liquid
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(cx - neckW/2, flaskTop);
+  ctx.lineTo(cx - neckW/2, flaskTop + neckH);
+  ctx.lineTo(cx - bodyW/2, flaskBottom);
+  ctx.lineTo(cx + bodyW/2, flaskBottom);
+  ctx.lineTo(cx + neckW/2, flaskTop + neckH);
+  ctx.lineTo(cx + neckW/2, flaskTop);
+  ctx.closePath();
+  ctx.clip();
+
+  if (state.liquidLevel > 0.01) {
+    const liquidMaxH = bodyH + neckH * 0.5;
+    const liquidH = liquidMaxH * state.liquidLevel;
+    const liquidTop = flaskBottom - liquidH;
+    const waveTime = Date.now() * 0.003;
+
+    const liquidGrad = ctx.createLinearGradient(cx, liquidTop, cx, flaskBottom);
+    const rgb = state.mixedColor;
+    liquidGrad.addColorStop(0, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.7)`);
+    liquidGrad.addColorStop(1, `rgba(${Math.max(0,rgb[0]-30)},${Math.max(0,rgb[1]-30)},${Math.max(0,rgb[2]-30)},0.9)`);
+    ctx.fillStyle = liquidGrad;
+
+    ctx.beginPath();
+    const waveW = bodyW * 1.2;
+    ctx.moveTo(cx - waveW, liquidTop);
+    for (let x = -waveW; x <= waveW; x += 4) {
+      const wave = Math.sin(x * 0.05 + waveTime) * 3 + Math.sin(x * 0.08 - waveTime * 1.3) * 2;
+      ctx.lineTo(cx + x, liquidTop + wave);
+    }
+    ctx.lineTo(cx + waveW, flaskBottom + 10);
+    ctx.lineTo(cx - waveW, flaskBottom + 10);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = `rgba(255,255,255,0.08)`;
+    ctx.fillRect(cx - bodyW * 0.3, liquidTop + 5, bodyW * 0.15, liquidH * 0.6);
+  }
+
+  spawnAmbientBubbles();
+  for (let i = state.bubbles.length - 1; i >= 0; i--) {
+    const b = state.bubbles[i];
+    b.x += b.vx + Math.sin(Date.now() * 0.005 + b.wobblePhase) * 0.3;
+    b.y += b.vy;
+    b.life--;
+    if (b.life <= 0 || b.y < flaskTop) { state.bubbles.splice(i, 1); continue; }
+    const alpha = Math.min(1, b.life / 20);
+    ctx.strokeStyle = `rgba(255,255,255,${alpha * 0.4})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = `rgba(255,255,255,${alpha * 0.15})`;
+    ctx.beginPath(); ctx.arc(b.x - b.r * 0.3, b.y - b.r * 0.3, b.r * 0.3, 0, Math.PI * 2); ctx.fill();
+  }
+
+  ctx.restore(); // end clip
+
+  // flask rim
+  ctx.fillStyle = "rgba(148, 210, 255, 0.15)";
+  ctx.fillRect(cx - neckW/2 - 4, flaskTop - 4, neckW + 8, 6);
+
+  // glass highlight
+  ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(cx - neckW/2 + 4, flaskTop + 10); ctx.lineTo(cx - bodyW/2 + 15, flaskBottom - 10); ctx.stroke();
+
+  // measurement lines
+  ctx.strokeStyle = "rgba(255,255,255,0.1)"; ctx.lineWidth = 1;
+  for (let i = 1; i <= 4; i++) {
+    const my = flaskBottom - (bodyH * i / 5);
+    const mxl = cx - bodyW/2 + 10 + (bodyW - 20) * (1 - i/5) * 0.3;
+    ctx.beginPath(); ctx.moveTo(mxl, my); ctx.lineTo(mxl + 12, my); ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+// ============================================================
+// DRAW HELPERS
+// ============================================================
+function drawOwlScientist(x, y) {
+  const bob = Math.sin(Date.now() * 0.003) * 3;
+  ctx.save();
+  ctx.translate(x, y + bob);
+
+  // lab coat
+  ctx.fillStyle = "#e2e8f0";
+  ctx.beginPath(); ctx.roundRect(-22, -10, 44, 40, 6); ctx.fill();
+  ctx.fillStyle = "#cbd5e1";
+  ctx.beginPath(); ctx.moveTo(-15,-10); ctx.lineTo(0,-2); ctx.lineTo(15,-10); ctx.lineTo(15,-5); ctx.lineTo(0,3); ctx.lineTo(-15,-5); ctx.fill();
+  ctx.strokeStyle = "#94a3b8"; ctx.lineWidth = 1; ctx.strokeRect(-16, 10, 12, 10);
+  ctx.fillStyle = "#3b82f6"; ctx.fillRect(-14, 6, 3, 10);
+
+  // head
+  ctx.fillStyle = "#c4956a"; ctx.beginPath(); ctx.arc(0, -24, 16, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#a67c52";
+  ctx.beginPath(); ctx.moveTo(-9,-36); ctx.lineTo(-6,-44); ctx.lineTo(-3,-34); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(9,-36);  ctx.lineTo(6,-44);  ctx.lineTo(3,-34);  ctx.fill();
+
+  // goggles
+  ctx.fillStyle = "rgba(148,210,255,0.3)"; ctx.strokeStyle = "#64748b"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(-7,-25,9,8,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(7,-25,9,8,0,0,Math.PI*2);  ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-1,-25); ctx.lineTo(1,-25); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-16,-25); ctx.lineTo(-18,-22); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(16,-25);  ctx.lineTo(18,-22);  ctx.stroke();
+
+  // eyes
+  ctx.fillStyle = "#ffd700";
+  ctx.beginPath(); ctx.arc(-7,-25,5,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(7,-25,5,0,Math.PI*2);  ctx.fill();
+  ctx.fillStyle = "#1a1a2e";
+  ctx.beginPath(); ctx.arc(-6,-25,2.5,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(8,-25,2.5,0,Math.PI*2);  ctx.fill();
+
+  // beak
+  ctx.fillStyle = "#ff9933"; ctx.beginPath(); ctx.moveTo(-3,-19); ctx.lineTo(0,-14); ctx.lineTo(3,-19); ctx.fill();
+
+  // wing with small beaker
+  ctx.fillStyle = "#a67c52";
+  ctx.save(); ctx.translate(-24, 0); ctx.rotate(-0.2 + Math.sin(Date.now() * 0.002) * 0.1);
+  ctx.beginPath(); ctx.ellipse(0, 0, 8, 14, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = "rgba(148,210,255,0.5)"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-5,-14); ctx.lineTo(-5,-6); ctx.lineTo(-8,2); ctx.lineTo(8,2); ctx.lineTo(5,-6); ctx.lineTo(5,-14); ctx.stroke();
+  ctx.fillStyle = "rgba(239,68,68,0.4)"; ctx.fillRect(-6,-4,12,6);
+  ctx.restore();
+
+  // feet
+  ctx.fillStyle = "#ff9933"; ctx.fillRect(-10,28,6,4); ctx.fillRect(4,28,6,4);
+  ctx.restore();
+}
+
+function drawPaintTube(x, y, color, label) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(-0.15);
+  ctx.fillStyle = color; ctx.beginPath(); ctx.roundRect(-8,-30,16,28,4); ctx.fill();
+  ctx.fillStyle = "#1e293b"; ctx.fillRect(-6,-36,12,8);
+  ctx.fillStyle = "#e2e8f0"; ctx.fillRect(-7,-5,14,8);
+  ctx.fillStyle = "white"; ctx.font = "bold 10px 'Baloo 2'"; ctx.textAlign = "center";
+  ctx.fillText(label, 0, -14);
+  const dropY = 6 + Math.sin(Date.now() * 0.003 + x) * 2;
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(0, dropY, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-3,dropY-3); ctx.lineTo(0,dropY-8); ctx.lineTo(3,dropY-3); ctx.fill();
+  ctx.restore();
+}
+
+function drawLabItem(x, shelfY, type, color) {
+  ctx.save(); ctx.translate(x, shelfY);
+  switch (type) {
+    case "beaker":
+      ctx.strokeStyle = "rgba(148,210,255,0.3)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-10,-30); ctx.lineTo(-10,-4); ctx.lineTo(10,-4); ctx.lineTo(10,-30); ctx.stroke();
+      ctx.fillStyle = color + "44"; ctx.fillRect(-9,-18,18,14);
+      break;
+    case "erlenmeyer":
+      ctx.strokeStyle = "rgba(148,210,255,0.3)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-4,-35); ctx.lineTo(-4,-20); ctx.lineTo(-14,-4); ctx.lineTo(14,-4); ctx.lineTo(4,-20); ctx.lineTo(4,-35); ctx.stroke();
+      ctx.fillStyle = color + "33";
+      ctx.beginPath(); ctx.moveTo(-4,-20); ctx.lineTo(-14,-4); ctx.lineTo(14,-4); ctx.lineTo(4,-20); ctx.fill();
+      break;
+    case "testTube":
+      ctx.strokeStyle = "rgba(148,210,255,0.3)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-4,-38); ctx.lineTo(-4,-8); ctx.arc(0,-8,4,Math.PI,0); ctx.lineTo(4,-38); ctx.stroke();
+      ctx.fillStyle = color + "55"; ctx.fillRect(-3,-20,6,12);
+      break;
+    case "book":
+      ctx.fillStyle = "#4a1d6e"; ctx.fillRect(-8,-28,16,24);
+      ctx.fillStyle = "#6d28d9"; ctx.fillRect(-6,-26,12,20);
+      ctx.fillStyle = "#fbbf24"; ctx.font = "8px 'Baloo 2'"; ctx.textAlign = "center";
+      ctx.fillText("ABC", 0, -14);
+      break;
+    case "plant":
+      ctx.fillStyle = "#92400e"; ctx.fillRect(-6,-12,12,8);
+      ctx.fillStyle = "#16a34a";
+      ctx.beginPath(); ctx.arc(-4,-18,6,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(4,-16,5,0,Math.PI*2);  ctx.fill();
+      ctx.beginPath(); ctx.arc(0,-22,5,0,Math.PI*2);  ctx.fill();
+      break;
+  }
+  ctx.restore();
+}
+
+// ============================================================
+// GAME LOOP
+// ============================================================
+function gameLoop() {
+  if (state.gameRunning) draw();
+  requestAnimationFrame(gameLoop);
+}
+
+// INIT
+document.getElementById("start-btn").onclick = startGame;
+generateShelfItems();
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>

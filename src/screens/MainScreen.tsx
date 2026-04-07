@@ -11,9 +11,10 @@ interface Props {
   onSelectSkarbiec?: () => void
   onSelectLabirynt?: () => void
   onSelectSowaDJ?: () => void
+  onSelectLaboratorium?: () => void
 }
 
-export function MainScreen({ onSelectMathQuiz, onSelectLiterQuiz, onSelectTutor, onSelectChat, onSelectStudy, onSelectLiterMistrz, onSelectPaniSowa, onSelectSkarbiec, onSelectLabirynt, onSelectSowaDJ }: Props) {
+export function MainScreen({ onSelectMathQuiz, onSelectLiterQuiz, onSelectTutor, onSelectChat, onSelectStudy, onSelectLiterMistrz, onSelectPaniSowa, onSelectSkarbiec, onSelectLabirynt, onSelectSowaDJ, onSelectLaboratorium }: Props) {
   const [showGry, setShowGry] = useState(false)
 
   return (
@@ -137,12 +138,25 @@ export function MainScreen({ onSelectMathQuiz, onSelectLiterQuiz, onSelectTutor,
               {onSelectSowaDJ && (
                 <button
                   onClick={() => { setShowGry(false); onSelectSowaDJ() }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 active:bg-orange-100 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 active:bg-orange-100 transition-colors border-b border-orange-100"
                 >
                   <span className="text-3xl">🎧</span>
                   <div className="text-left">
                     <div className="font-black text-gray-800 text-sm">Sowa DJ</div>
                     <div className="text-[0.6rem] text-gray-400 font-bold uppercase">Rytm i literki</div>
+                  </div>
+                </button>
+              )}
+
+              {onSelectLaboratorium && (
+                <button
+                  onClick={() => { setShowGry(false); onSelectLaboratorium() }}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 active:bg-orange-100 transition-colors"
+                >
+                  <span className="text-3xl">🧪</span>
+                  <div className="text-left">
+                    <div className="font-black text-gray-800 text-sm">Laboratorium</div>
+                    <div className="text-[0.6rem] text-gray-400 font-bold uppercase">Mieszaj kolory</div>
                   </div>
                 </button>
               )}
