@@ -18,6 +18,7 @@ import { SkarbiecGame } from './games/skarbiec/Game'
 import { LabiryntGame } from './games/labirynt/Game'
 import { SowaDJGame } from './games/sowadj/Game'
 import { LaboratoriumGame } from './games/laboratorium/Game'
+import { KartografGame } from './games/kartograf/Game'
 
 import { generateQuestions, generateReview, generateLiterReview } from './lib/claude'
 import { getQuestionsFromCache, saveQuestionsToCache } from './lib/questionsCache'
@@ -26,7 +27,7 @@ import { useTimer } from './hooks/useTimer'
 import { useHistory } from './hooks/useHistory'
 
 export default function App() {
-  const [screen, setScreen] = useState<'main' | 'start' | 'loading_q' | 'quiz' | 'loading_r' | 'results' | 'tutor' | 'chat' | 'liter_start' | 'liter_quiz' | 'liter_results' | 'liter_loading_r' | 'liter_study_select' | 'litermistrz_game' | 'panisowa_game' | 'skarbiec_game' | 'labirynt_game' | 'sowadj_game' | 'laboratorium_game'>('main')
+  const [screen, setScreen] = useState<'main' | 'start' | 'loading_q' | 'quiz' | 'loading_r' | 'results' | 'tutor' | 'chat' | 'liter_start' | 'liter_quiz' | 'liter_results' | 'liter_loading_r' | 'liter_study_select' | 'litermistrz_game' | 'panisowa_game' | 'skarbiec_game' | 'labirynt_game' | 'sowadj_game' | 'laboratorium_game' | 'kartograf_game'>('main')
   const [level, setLevel] = useState<Level>('easy')
   const [literLevel, setLiterLevel] = useState<LiterLevel>('easy')
   const [focusType, setFocusType] = useState<TaskType | undefined>()
@@ -148,6 +149,7 @@ export default function App() {
           onSelectLabirynt={() => setScreen('labirynt_game')}
           onSelectSowaDJ={() => setScreen('sowadj_game')}
           onSelectLaboratorium={() => setScreen('laboratorium_game')}
+          onSelectKartograf={() => setScreen('kartograf_game')}
         />
       )}
       
@@ -176,6 +178,9 @@ export default function App() {
 
       {/* LABORATORIUM PANI SOWY */}
       {screen === 'laboratorium_game' && <LaboratoriumGame onBack={goToMain} />}
+
+      {/* SOWA KARTOGRAF */}
+      {screen === 'kartograf_game' && <KartografGame onBack={goToMain} />}
 
       {/* LITERKI PKG */}
       {screen === 'liter_start' && <LiterStartScreen onStart={handleStartLiter} onBack={goToMain} />}

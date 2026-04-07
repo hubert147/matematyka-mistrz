@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Sowa Kartograf</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@400;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: 'Fredoka', sans-serif;
+    background: #0c1222;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+  }
+
+  /* === HUD === */
+  #hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: calc(8px + env(safe-area-inset-top, 0px)) 14px 8px;
+    background: rgba(12, 18, 34, 0.97);
+    border-bottom: 2px solid rgba(251, 191, 36, 0.15);
+    flex-shrink: 0;
+    z-index: 10;
+    gap: 6px;
+  }
+
+  .hud-box {
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 6px 12px;
+    color: white;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1px solid rgba(251, 191, 36, 0.15);
+  }
+
+  #btn-back {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(251,191,36,0.15);
+    border-radius: 12px;
+    padding: 6px 12px;
+    color: rgba(255,255,255,0.7);
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+  }
+
+  /* === MAP AREA === */
+  #map-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  canvas { display: block; }
+
+  /* === MESSAGE OVERLAY === */
+  #msg-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    z-index: 20;
+  }
+
+  #msg-overlay.visible { display: flex; }
+
+  .msg-box {
+    background: rgba(12, 18, 34, 0.96);
+    border: 3px solid rgba(251, 191, 36, 0.3);
+    border-radius: 22px;
+    padding: 26px 30px;
+    text-align: center;
+    max-width: 300px;
+  }
+
+  .msg-box .msg-icon { font-size: 48px; margin-bottom: 6px; }
+
+  .msg-box h2 {
+    font-family: 'Baloo 2', sans-serif;
+    color: white;
+    font-size: 24px;
+    margin-bottom: 4px;
+  }
+
+  .msg-box p {
+    font-family: 'Fredoka', sans-serif;
+    color: rgba(255,255,255,0.6);
+    font-size: 14px;
+    margin-bottom: 14px;
+  }
+
+  .msg-btn {
+    padding: 11px 32px;
+    border-radius: 14px;
+    border: 2px solid rgba(251, 191, 36, 0.3);
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #1a1a2e;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* === CODE PANEL === */
+  #code-panel {
+    background: #111827;
+    border-top: 2px solid rgba(251, 191, 36, 0.12);
+    padding: 10px 12px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  #palette {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .cmd-btn {
+    width: 50px; height: 50px;
+    border-radius: 14px;
+    border: 2px solid rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.12s;
+    position: relative;
+  }
+
+  .cmd-btn:active { transform: scale(0.88); }
+
+  .cmd-btn.dir { background: rgba(59,130,246,0.2); border-color: rgba(59,130,246,0.35); }
+  .cmd-btn.dir:active { background: rgba(59,130,246,0.45); }
+
+  .cmd-btn.loop {
+    background: rgba(168,85,247,0.2);
+    border-color: rgba(168,85,247,0.35);
+    font-size: 13px;
+    font-family: 'Baloo 2', sans-serif;
+    color: #c084fc;
+    font-weight: 700;
+    width: auto;
+    padding: 0 12px;
+  }
+  .cmd-btn.loop:active { background: rgba(168,85,247,0.45); }
+
+  .cmd-btn.action { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.25); }
+  .cmd-btn.play { background: linear-gradient(135deg,#10b981,#059669); border-color: rgba(16,185,129,0.4); }
+
+  #sequence-area {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 50px;
+    padding: 5px 10px;
+    background: rgba(255,255,255,0.03);
+    border: 2px dashed rgba(255,255,255,0.08);
+    border-radius: 14px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #sequence-area:empty::after {
+    content: "← Dodaj komendy tutaj";
+    color: rgba(255,255,255,0.2);
+    font-family: 'Fredoka', sans-serif;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .seq-block {
+    min-width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .seq-block.dir {
+    background: rgba(59,130,246,0.25);
+    border: 2px solid rgba(59,130,246,0.4);
+  }
+
+  .seq-block.loop-block {
+    background: rgba(168,85,247,0.2);
+    border: 2px solid rgba(168,85,247,0.4);
+    padding: 0 8px;
+    gap: 3px;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 12px;
+    color: #c084fc;
+    font-weight: 700;
+    min-width: auto;
+  }
+
+  .loop-inner { display: flex; gap: 2px; align-items: center; }
+
+  .seq-mini {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    background: rgba(59,130,246,0.3);
+    border: 1px solid rgba(59,130,246,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+  }
+
+  .seq-block.active {
+    box-shadow: 0 0 14px rgba(251,191,36,0.5);
+    border-color: #fbbf24 !important;
+    transform: scale(1.15);
+  }
+
+  .seq-block.error {
+    box-shadow: 0 0 14px rgba(239,68,68,0.5);
+    border-color: #ef4444 !important;
+    animation: blockShake 0.3s ease;
+  }
+
+  @keyframes blockShake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+
+  #controls {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+  }
+
+  #steps-info {
+    text-align: center;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+  }
+
+  /* === START SCREEN === */
+  #screen-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    background: radial-gradient(ellipse at center, #162032 0%, #0c1222 70%);
+    padding: 20px;
+  }
+
+  #screen-overlay.hidden { display: none; }
+
+  #screen-overlay h1 {
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 34px;
+    color: white;
+    text-shadow: 0 0 25px rgba(251,191,36,0.4);
+    margin-bottom: 8px;
+  }
+
+  #screen-overlay .subtitle {
+    font-size: 15px;
+    color: #fbbf24;
+    margin-bottom: 22px;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  .big-icon {
+    font-size: 72px;
+    margin-bottom: 12px;
+    animation: mapFloat 2.5s ease-in-out infinite;
+  }
+
+  @keyframes mapFloat {
+    0%,100% { transform: translateY(0) rotate(-2deg); }
+    50% { transform: translateY(-10px) rotate(2deg); }
+  }
+
+  .start-btn {
+    padding: 13px 38px;
+    border-radius: 16px;
+    border: 3px solid rgba(251,191,36,0.3);
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #1a1a2e;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 25px rgba(245,158,11,0.3);
+    -webkit-tap-highlight-color: transparent;
+    margin-bottom: 10px;
+  }
+
+  .back-overlay-btn {
+    padding: 9px 26px;
+    border-radius: 14px;
+    border: 2px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.55);
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #level-info { color: #fcd34d; font-size: 14px; margin-bottom: 14px; font-family: 'Baloo 2', sans-serif; }
+  .stars { font-size: 32px; margin-bottom: 8px; letter-spacing: 6px; }
+</style>
+</head>
+<body>
+
+<!-- START SCREEN -->
+<div id="screen-overlay">
+  <div class="big-icon">🦉🗺️</div>
+  <h1>Sowa Kartograf</h1>
+  <div class="subtitle">Zaprogramuj sowę żeby dotarła do celu!<br>Ułóż komendy i kliknij ▶</div>
+  <div id="level-info">Poziom 1</div>
+  <button class="start-btn" id="start-btn">🗺️ Start!</button>
+  <button class="back-overlay-btn" id="back-overlay-btn">← Wróć do menu</button>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+  <div id="hud">
+    <button id="btn-back">← Menu</button>
+    <div class="hud-box">🗺️ Lvl <span id="level-num">1</span></div>
+    <div class="hud-box">⭐ <span id="score">0</span></div>
+    <div class="hud-box">Kroki: <span id="max-steps">?</span></div>
+  </div>
+
+  <div id="map-area">
+    <canvas id="game"></canvas>
+    <div id="msg-overlay">
+      <div class="msg-box">
+        <div class="msg-icon" id="msg-icon">🎉</div>
+        <h2 id="msg-title">Brawo!</h2>
+        <p id="msg-text">Sowa dotarła do celu!</p>
+        <button class="msg-btn" id="msg-btn">▶ Dalej</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="code-panel">
+    <div id="palette">
+      <div class="cmd-btn dir" data-cmd="up">▲</div>
+      <div class="cmd-btn dir" data-cmd="right">▶</div>
+      <div class="cmd-btn dir" data-cmd="down">▼</div>
+      <div class="cmd-btn dir" data-cmd="left">◀</div>
+      <div class="cmd-btn loop" data-cmd="loop2" id="loop-btn-2" style="display:none">2× 🔁</div>
+      <div class="cmd-btn loop" data-cmd="loop3" id="loop-btn-3" style="display:none">3× 🔁</div>
+    </div>
+    <div id="sequence-area"></div>
+    <div id="controls">
+      <div class="cmd-btn action" data-cmd="undo">↩️</div>
+      <div class="cmd-btn action" data-cmd="clear">🗑️</div>
+      <div class="cmd-btn play" data-cmd="play">▶</div>
+    </div>
+    <div id="steps-info">Tap komendę → dodaj do sekwencji → kliknij ▶</div>
+  </div>
+</div>
+
+<script>
+// 🦉🗺️ SOWA KARTOGRAF — Visual Programming Game
+
+function goBack() {
+  window.parent.postMessage({ type: 'kartograf:back' }, '*');
+}
+document.getElementById('btn-back').onclick = goBack;
+document.getElementById('back-overlay-btn').onclick = goBack;
+
+// ============================================================
+// LEVELS
+// ============================================================
+const LEVELS = [
+  { gridW:5, gridH:4, start:[0,1], goal:[3,1], trees:[], maxSteps:4, loops:false,
+    gems:[[1,1],[2,1]], hint:"Idź w prawo 3 razy!" },
+  { gridW:5, gridH:4, start:[0,2], goal:[2,0], trees:[], maxSteps:5, loops:false,
+    gems:[[1,2],[2,2],[2,1]], hint:"Prawo, prawo, potem w górę!" },
+  { gridW:5, gridH:5, start:[0,2], goal:[4,2], trees:[[2,2],[2,1]], maxSteps:8, loops:false,
+    gems:[[1,2],[3,2],[2,3]], hint:"Omiń drzewa!" },
+  { gridW:5, gridH:5, start:[0,0], goal:[4,4], trees:[[1,0],[1,1],[3,3],[3,4],[2,2]], maxSteps:10, loops:false,
+    gems:[[0,1],[0,2],[1,3],[2,4]], hint:"Znajdź drogę przez las!" },
+  { gridW:6, gridH:4, start:[0,1], goal:[5,1], trees:[], maxSteps:4, loops:true,
+    gems:[[1,1],[2,1],[3,1],[4,1]], hint:"Użyj pętli! 🔁 Powtórz krok w prawo." },
+  { gridW:6, gridH:5, start:[0,3], goal:[5,0], trees:[[2,1],[3,2],[4,3]], maxSteps:6, loops:true,
+    gems:[[1,3],[1,2],[2,2],[3,1],[4,1],[5,1]], hint:"Pętla + skręt = mniej kroków!" },
+  { gridW:7, gridH:6, start:[0,5], goal:[6,0], trees:[[1,4],[2,3],[3,2],[4,1],[3,4],[5,3]], maxSteps:8, loops:true,
+    gems:[[0,4],[1,3],[2,2],[3,1],[4,0],[5,0]], hint:"Zaplanuj trasę schodami!" },
+  { gridW:7, gridH:7, start:[0,6], goal:[6,0],
+    trees:[[1,5],[2,5],[2,4],[3,3],[4,3],[4,2],[5,1],[1,1],[3,5],[5,4]],
+    maxSteps:10, loops:true,
+    gems:[[0,5],[1,4],[1,3],[2,3],[3,2],[4,1],[5,0],[6,1]], hint:"Labirynt! Zaplanuj uważnie!" },
+];
+
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  level: 0, score: 0,
+  sequence: [],
+  executing: false,
+  owlX: 0, owlY: 0,
+  owlAnimX: 0, owlAnimY: 0,
+  owlFacing: 1,
+  collectedGems: new Set(),
+  loopMode: false, loopCount: 0, loopCommands: [],
+  trail: [],
+};
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+// ============================================================
+// LEVEL SETUP
+// ============================================================
+function loadLevel() {
+  const lvl = LEVELS[Math.min(state.level, LEVELS.length - 1)];
+  state.sequence = [];
+  state.executing = false;
+  state.owlX = lvl.start[0]; state.owlY = lvl.start[1];
+  state.owlAnimX = lvl.start[0]; state.owlAnimY = lvl.start[1];
+  state.owlFacing = 1;
+  state.collectedGems = new Set();
+  state.loopMode = false; state.loopCommands = [];
+  state.trail = [{ x: lvl.start[0], y: lvl.start[1] }];
+
+  document.getElementById("loop-btn-2").style.display = lvl.loops ? "flex" : "none";
+  document.getElementById("loop-btn-3").style.display = lvl.loops ? "flex" : "none";
+  document.getElementById("level-num").textContent = state.level + 1;
+  document.getElementById("max-steps").textContent = lvl.maxSteps;
+  document.getElementById("score").textContent = state.score;
+  document.getElementById("steps-info").textContent = lvl.hint || "Ułóż komendy i kliknij ▶";
+
+  renderSequence();
+  drawMap();
+}
+
+// ============================================================
+// CANVAS SIZING
+// ============================================================
+function resizeCanvas() {
+  const lvl = LEVELS[Math.min(state.level, LEVELS.length - 1)];
+  const area = document.getElementById("map-area");
+  const maxW = area.clientWidth - 16;
+  const maxH = area.clientHeight - 16;
+  const cellSize = Math.min(Math.floor(maxW / lvl.gridW), Math.floor(maxH / lvl.gridH), 80);
+  canvas.width  = lvl.gridW * cellSize;
+  canvas.height = lvl.gridH * cellSize;
+  return cellSize;
+}
+
+window.addEventListener("resize", () => { if (!state.executing) drawMap(); });
+
+// ============================================================
+// DRAW MAP
+// ============================================================
+function drawMap() {
+  const lvl = LEVELS[Math.min(state.level, LEVELS.length - 1)];
+  const CELL = resizeCanvas();
+
+  // Background
+  ctx.fillStyle = "#1a2744";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Grid tiles
+  for (let y = 0; y < lvl.gridH; y++) {
+    for (let x = 0; x < lvl.gridW; x++) {
+      const px = x * CELL, py = y * CELL;
+      ctx.fillStyle = (x + y) % 2 === 0 ? "#2d5a27" : "#265a22";
+      ctx.fillRect(px + 1, py + 1, CELL - 2, CELL - 2);
+      // Grass blades
+      ctx.fillStyle = (x + y) % 2 === 0 ? "#3a7a33" : "#2e6a28";
+      for (let g = 0; g < 3; g++) {
+        const gx = px + 6 + g * (CELL / 3);
+        const gy = py + CELL - 6 + Math.sin(x * 3 + y * 5 + g) * 2;
+        ctx.fillRect(gx, gy, 2, -3 - Math.abs(Math.sin(g + x)) * 2);
+      }
+    }
+  }
+
+  // Trail
+  ctx.strokeStyle = "rgba(251,191,36,0.25)";
+  ctx.lineWidth = 3;
+  ctx.setLineDash([6, 4]);
+  if (state.trail.length > 1) {
+    ctx.beginPath();
+    ctx.moveTo(state.trail[0].x * CELL + CELL/2, state.trail[0].y * CELL + CELL/2);
+    for (let i = 1; i < state.trail.length; i++) {
+      ctx.lineTo(state.trail[i].x * CELL + CELL/2, state.trail[i].y * CELL + CELL/2);
+    }
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  // Trees
+  for (const [tx, ty] of lvl.trees) drawTree(tx * CELL + CELL/2, ty * CELL + CELL/2, CELL);
+
+  // Gems
+  if (lvl.gems) {
+    for (let i = 0; i < lvl.gems.length; i++) {
+      if (!state.collectedGems.has(i)) drawGem(lvl.gems[i][0] * CELL + CELL/2, lvl.gems[i][1] * CELL + CELL/2, CELL);
+    }
+  }
+
+  // Goal
+  drawGoal(lvl.goal[0] * CELL + CELL/2, lvl.goal[1] * CELL + CELL/2, CELL);
+
+  // Owl
+  drawOwl(state.owlAnimX * CELL + CELL/2, state.owlAnimY * CELL + CELL/2, CELL, state.owlFacing);
+}
+
+// ============================================================
+// DRAW HELPERS
+// ============================================================
+function drawTree(cx, cy, cell) {
+  const s = cell * 0.35;
+  ctx.fillStyle = "#5c3a1e";
+  ctx.fillRect(cx - s*0.2, cy + s*0.2, s*0.4, s*0.6);
+  ctx.fillStyle = "#1a6b15";
+  ctx.beginPath(); ctx.arc(cx, cy - s*0.1, s*0.55, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = "#228b1c";
+  ctx.beginPath(); ctx.arc(cx - s*0.15, cy - s*0.25, s*0.35, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + s*0.2, cy - s*0.15, s*0.32, 0, Math.PI*2); ctx.fill();
+}
+
+function drawGem(cx, cy, cell) {
+  const s = cell * 0.18;
+  const bob = Math.sin(Date.now() * 0.004 + cx + cy) * 3;
+  ctx.shadowColor = "#fbbf24"; ctx.shadowBlur = 8;
+  ctx.fillStyle = "#fbbf24";
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - s + bob);
+  ctx.lineTo(cx + s*0.8, cy + bob);
+  ctx.lineTo(cx, cy + s*0.5 + bob);
+  ctx.lineTo(cx - s*0.8, cy + bob);
+  ctx.closePath(); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "rgba(255,255,255,0.6)";
+  ctx.beginPath(); ctx.arc(cx - s*0.2, cy - s*0.3 + bob, 2, 0, Math.PI*2); ctx.fill();
+}
+
+function drawGoal(cx, cy, cell) {
+  const s = cell * 0.3;
+  const wave = Math.sin(Date.now() * 0.005) * 3;
+  ctx.strokeStyle = "#d4d4d8"; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(cx, cy + s); ctx.lineTo(cx, cy - s*1.2); ctx.stroke();
+  ctx.fillStyle = "#ef4444";
+  ctx.beginPath(); ctx.moveTo(cx, cy - s*1.2); ctx.lineTo(cx + s*1.2 + wave, cy - s*0.7); ctx.lineTo(cx, cy - s*0.2); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#fbbf24";
+  ctx.font = `${Math.round(s*0.7)}px 'Baloo 2'`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText("⭐", cx + s*0.5 + wave*0.5, cy - s*0.7);
+  ctx.shadowColor = "#ef4444"; ctx.shadowBlur = 8;
+  ctx.fillStyle = "rgba(239,68,68,0.12)";
+  ctx.beginPath(); ctx.arc(cx, cy, s*1.5, 0, Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
+function drawOwl(cx, cy, cell, facing) {
+  const s = cell * 0.28;
+  const bob = Math.sin(Date.now() * 0.005) * 2;
+  const wing = Math.sin(Date.now() * 0.008) * 0.25;
+  ctx.save(); ctx.translate(cx, cy + bob);
+  if (facing < 0) ctx.scale(-1, 1);
+
+  ctx.fillStyle = "#c4956a"; ctx.beginPath(); ctx.ellipse(0, 2, s*0.75, s, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = "#f5deb3"; ctx.beginPath(); ctx.ellipse(0, s*0.3, s*0.45, s*0.6, 0, 0, Math.PI*2); ctx.fill();
+  ctx.save(); ctx.rotate(wing);
+  ctx.fillStyle = "#a67c52"; ctx.beginPath(); ctx.ellipse(s*0.55, 0, s*0.35, s*0.65, 0.3, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = "#c4956a"; ctx.beginPath(); ctx.arc(0, -s*0.7, s*0.6, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = "#a67c52";
+  ctx.beginPath(); ctx.moveTo(-s*0.35,-s*1.1); ctx.lineTo(-s*0.2,-s*1.5); ctx.lineTo(-s*0.05,-s*1.05); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(s*0.35,-s*1.1);  ctx.lineTo(s*0.2,-s*1.5);  ctx.lineTo(s*0.05,-s*1.05);  ctx.fill();
+  ctx.fillStyle = "#ffd700";
+  ctx.beginPath(); ctx.arc(-s*0.22,-s*0.75,s*0.22,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(s*0.22,-s*0.75,s*0.22,0,Math.PI*2);  ctx.fill();
+  ctx.fillStyle = "#1a1a2e";
+  ctx.beginPath(); ctx.arc(-s*0.18,-s*0.75,s*0.11,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(s*0.26,-s*0.75,s*0.11,0,Math.PI*2);  ctx.fill();
+  ctx.fillStyle = "#ff9933";
+  ctx.beginPath(); ctx.moveTo(-s*0.08,-s*0.52); ctx.lineTo(0,-s*0.32); ctx.lineTo(s*0.08,-s*0.52); ctx.fill();
+
+  // Map scroll in wing
+  ctx.fillStyle = "#fef3c7"; ctx.fillRect(s*0.3, -s*0.2, s*0.5, s*0.4);
+  ctx.strokeStyle = "#d97706"; ctx.lineWidth = 1; ctx.strokeRect(s*0.3, -s*0.2, s*0.5, s*0.4);
+  ctx.beginPath(); ctx.moveTo(s*0.35,-s*0.05); ctx.lineTo(s*0.55,-s*0.15); ctx.lineTo(s*0.7,0); ctx.stroke();
+  ctx.fillStyle = "#ef4444"; ctx.beginPath(); ctx.arc(s*0.7, 0, 2, 0, Math.PI*2); ctx.fill();
+
+  ctx.restore();
+}
+
+// ============================================================
+// SEQUENCE BUILDING
+// ============================================================
+const arrowMap = { up:"▲", right:"▶", down:"▼", left:"◀" };
+
+function addCommand(cmd) {
+  if (state.executing) return;
+  const lvl = LEVELS[Math.min(state.level, LEVELS.length - 1)];
+
+  if (cmd === "undo") {
+    if (state.loopMode) state.loopCommands.pop();
+    else state.sequence.pop();
+    renderSequence(); return;
+  }
+  if (cmd === "clear") {
+    state.sequence = []; state.loopMode = false; state.loopCommands = [];
+    renderSequence(); return;
+  }
+  if (cmd === "play") {
+    if (!state.loopMode) executeSequence(); return;
+  }
+
+  if (cmd === "loop2" || cmd === "loop3") {
+    if (state.loopMode) {
+      if (state.loopCommands.length > 0)
+        state.sequence.push({ type:"loop", count:state.loopCount, commands:[...state.loopCommands] });
+      state.loopMode = false; state.loopCommands = [];
+    } else {
+      state.loopMode = true; state.loopCount = cmd === "loop2" ? 2 : 3; state.loopCommands = [];
+    }
+    renderSequence(); return;
+  }
+
+  if (countSteps() >= lvl.maxSteps && !state.loopMode) return;
+  const entry = { type:"dir", dir:cmd };
+  if (state.loopMode) state.loopCommands.push(entry);
+  else state.sequence.push(entry);
+  renderSequence();
+}
+
+function countSteps() {
+  let count = 0;
+  for (const s of state.sequence) {
+    if (s.type === "dir") count++;
+    if (s.type === "loop") count += s.commands.length;
+  }
+  return count;
+}
+
+function renderSequence() {
+  const area = document.getElementById("sequence-area");
+  area.innerHTML = "";
+
+  for (let i = 0; i < state.sequence.length; i++) {
+    const s = state.sequence[i];
+    if (s.type === "dir") {
+      const block = document.createElement("div");
+      block.className = "seq-block dir";
+      block.textContent = arrowMap[s.dir];
+      block.dataset.index = i;
+      block.onclick = () => { if (!state.executing) { state.sequence.splice(i,1); renderSequence(); } };
+      area.appendChild(block);
+    } else if (s.type === "loop") {
+      const block = document.createElement("div");
+      block.className = "seq-block loop-block";
+      block.dataset.index = i;
+      block.textContent = `${s.count}× `;
+      const innerDiv = document.createElement("span");
+      innerDiv.className = "loop-inner";
+      for (const c of s.commands) {
+        const mini = document.createElement("span");
+        mini.className = "seq-mini";
+        mini.textContent = arrowMap[c.dir];
+        innerDiv.appendChild(mini);
+      }
+      block.appendChild(innerDiv);
+      block.onclick = () => { if (!state.executing) { state.sequence.splice(i,1); renderSequence(); } };
+      area.appendChild(block);
+    }
+  }
+
+  if (state.loopMode) {
+    const loopIndicator = document.createElement("div");
+    loopIndicator.className = "seq-block loop-block";
+    loopIndicator.style.borderStyle = "dashed";
+    loopIndicator.textContent = `${state.loopCount}× `;
+    const innerDiv = document.createElement("span");
+    innerDiv.className = "loop-inner";
+    for (const c of state.loopCommands) {
+      const mini = document.createElement("span");
+      mini.className = "seq-mini";
+      mini.textContent = arrowMap[c.dir];
+      innerDiv.appendChild(mini);
+    }
+    loopIndicator.appendChild(innerDiv);
+    const doneBtn = document.createElement("span");
+    doneBtn.textContent = " ✓";
+    doneBtn.style.cursor = "pointer";
+    doneBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (state.loopCommands.length > 0)
+        state.sequence.push({ type:"loop", count:state.loopCount, commands:[...state.loopCommands] });
+      state.loopMode = false; state.loopCommands = [];
+      renderSequence();
+    };
+    loopIndicator.appendChild(doneBtn);
+    area.appendChild(loopIndicator);
+  }
+
+  const lvl = LEVELS[Math.min(state.level, LEVELS.length-1)];
+  document.getElementById("steps-info").textContent = state.loopMode
+    ? `🔁 Budowanie pętli ×${state.loopCount} — dodaj komendy i kliknij ✓`
+    : `Użyto kroków: ${countSteps()} / ${lvl.maxSteps}`;
+
+  area.scrollLeft = area.scrollWidth;
+}
+
+// ============================================================
+// EXECUTION ENGINE
+// ============================================================
+async function executeSequence() {
+  if (state.sequence.length === 0) return;
+  state.executing = true;
+  const lvl = LEVELS[Math.min(state.level, LEVELS.length - 1)];
+
+  // Flatten loops
+  const expanded = [], blockRefs = [];
+  for (let i = 0; i < state.sequence.length; i++) {
+    const s = state.sequence[i];
+    if (s.type === "dir") { expanded.push(s); blockRefs.push(i); }
+    else if (s.type === "loop") {
+      for (let r = 0; r < s.count; r++)
+        for (const c of s.commands) { expanded.push(c); blockRefs.push(i); }
+    }
+  }
+
+  // Reset to start
+  state.owlX = lvl.start[0]; state.owlY = lvl.start[1];
+  state.owlAnimX = lvl.start[0]; state.owlAnimY = lvl.start[1];
+  state.collectedGems = new Set();
+  state.trail = [{ x:lvl.start[0], y:lvl.start[1] }];
+  drawMap();
+  await sleep(400);
+
+  for (let i = 0; i < expanded.length; i++) {
+    const cmd = expanded[i];
+    highlightBlock(blockRefs[i], "active");
+
+    const dx = cmd.dir === "right" ? 1 : cmd.dir === "left" ? -1 : 0;
+    const dy = cmd.dir === "down"  ? 1 : cmd.dir === "up"   ? -1 : 0;
+    if (dx > 0) state.owlFacing = 1;
+    if (dx < 0) state.owlFacing = -1;
+
+    const nx = state.owlX + dx, ny = state.owlY + dy;
+
+    if (nx < 0 || nx >= lvl.gridW || ny < 0 || ny >= lvl.gridH) {
+      highlightBlock(blockRefs[i], "error");
+      await sleep(400);
+      showError("🧱", "Poza mapą!", "Sowa wyleciała poza mapę!");
+      state.executing = false; resetHighlights(); return;
+    }
+
+    if (lvl.trees.some(([tx,ty]) => tx===nx && ty===ny)) {
+      await animateOwlTo(nx, ny, 200);
+      highlightBlock(blockRefs[i], "error");
+      await sleep(300);
+      showError("🌳", "Bum! Drzewo!", "Sowa wpadła w drzewo!");
+      state.executing = false; resetHighlights(); return;
+    }
+
+    state.owlX = nx; state.owlY = ny;
+    state.trail.push({ x:nx, y:ny });
+    await animateOwlTo(nx, ny, 250);
+
+    if (lvl.gems) {
+      for (let g = 0; g < lvl.gems.length; g++) {
+        if (!state.collectedGems.has(g) && lvl.gems[g][0]===nx && lvl.gems[g][1]===ny) {
+          state.collectedGems.add(g);
+          state.score += 5;
+          document.getElementById("score").textContent = state.score;
+        }
+      }
+    }
+
+    drawMap(); resetHighlights(); await sleep(80);
+
+    if (nx === lvl.goal[0] && ny === lvl.goal[1]) {
+      state.score += 20 + (state.level + 1) * 5;
+      document.getElementById("score").textContent = state.score;
+      const gemsTotal = lvl.gems ? lvl.gems.length : 0;
+      const gemsGot = state.collectedGems.size;
+      await sleep(300);
+
+      const s1 = gemsGot === gemsTotal ? 3 : gemsGot > gemsTotal/2 ? 2 : 1;
+      const starsStr = "⭐".repeat(s1) + "☆".repeat(3-s1);
+      const isLast = state.level + 1 >= LEVELS.length;
+
+      showMessage("🎉", starsStr, `Sowa dotarła! Klejnoty: ${gemsGot}/${gemsTotal}`,
+        isLast ? "🏆 Koniec gry!" : "▶ Następny poziom!", () => {
+          hideMessage();
+          if (!isLast) { state.level++; loadLevel(); }
+          else winGame();
+        });
+
+      state.executing = false; return;
+    }
+  }
+
+  await sleep(300);
+  showMessage("🤔", "Nie dotarła!", "Sowa nie doszła do celu. Dodaj więcej komend!", "🔄 Popraw", () => {
+    hideMessage();
+    const lvl2 = LEVELS[Math.min(state.level, LEVELS.length-1)];
+    state.owlX = lvl2.start[0]; state.owlY = lvl2.start[1];
+    state.owlAnimX = lvl2.start[0]; state.owlAnimY = lvl2.start[1];
+    state.collectedGems = new Set();
+    state.trail = [{ x:lvl2.start[0], y:lvl2.start[1] }];
+    drawMap();
+  });
+  state.executing = false; resetHighlights();
+}
+
+function animateOwlTo(tx, ty, duration) {
+  return new Promise(resolve => {
+    const startX = state.owlAnimX, startY = state.owlAnimY;
+    const t0 = Date.now();
+    function tick() {
+      const t = Math.min((Date.now()-t0)/duration, 1);
+      const e = t<0.5 ? 2*t*t : -1+(4-2*t)*t;
+      state.owlAnimX = startX + (tx-startX)*e;
+      state.owlAnimY = startY + (ty-startY)*e;
+      drawMap();
+      if (t < 1) requestAnimationFrame(tick); else resolve();
+    }
+    tick();
+  });
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function highlightBlock(idx, cls) {
+  document.querySelectorAll(".seq-block").forEach(b => {
+    if (parseInt(b.dataset.index) === idx) b.classList.add(cls);
+  });
+}
+function resetHighlights() {
+  document.querySelectorAll(".seq-block").forEach(b => b.classList.remove("active","error"));
+}
+
+// ============================================================
+// MESSAGES
+// ============================================================
+function showMessage(icon, title, text, btnText, onNext) {
+  document.getElementById("msg-icon").textContent  = icon;
+  document.getElementById("msg-title").textContent = title;
+  document.getElementById("msg-text").textContent  = text;
+  const btn = document.getElementById("msg-btn");
+  btn.textContent = btnText;
+  btn.onclick = onNext || hideMessage;
+  document.getElementById("msg-overlay").classList.add("visible");
+}
+
+function showError(icon, title, text) {
+  showMessage(icon, title, text, "🔄 Popraw komendy", () => {
+    hideMessage();
+    const lvl = LEVELS[Math.min(state.level, LEVELS.length-1)];
+    state.owlX = lvl.start[0]; state.owlY = lvl.start[1];
+    state.owlAnimX = lvl.start[0]; state.owlAnimY = lvl.start[1];
+    state.collectedGems = new Set();
+    state.trail = [{ x:lvl.start[0], y:lvl.start[1] }];
+    drawMap();
+  });
+}
+
+function hideMessage() {
+  document.getElementById("msg-overlay").classList.remove("visible");
+}
+
+function winGame() {
+  const overlay = document.getElementById("screen-overlay");
+  overlay.classList.remove("hidden");
+  overlay.innerHTML = `
+    <div class="big-icon">🦉🏆</div>
+    <div class="stars">⭐⭐⭐</div>
+    <h1>Mistrz Kartograf!</h1>
+    <div class="subtitle">Ukończyłeś wszystkie mapy!<br>Wynik: ${state.score} punktów</div>
+    <button class="start-btn" id="start-btn">🗺️ Zagraj od nowa!</button>
+    <button class="back-overlay-btn" id="back-overlay-btn2">← Wróć do menu</button>
+  `;
+  document.getElementById("start-btn").onclick = () => {
+    state.level = 0; state.score = 0;
+    overlay.classList.add("hidden");
+    document.getElementById("app").style.display = "flex";
+    loadLevel();
+  };
+  document.getElementById("back-overlay-btn2").onclick = goBack;
+  document.getElementById("app").style.display = "none";
+}
+
+// ============================================================
+// PALETTE + CONTROLS CLICKS
+// ============================================================
+document.getElementById("palette").addEventListener("click", e => {
+  const btn = e.target.closest(".cmd-btn");
+  if (btn) addCommand(btn.dataset.cmd);
+});
+document.getElementById("controls").addEventListener("click", e => {
+  const btn = e.target.closest(".cmd-btn");
+  if (btn) addCommand(btn.dataset.cmd);
+});
+
+// ============================================================
+// INIT
+// ============================================================
+document.getElementById("start-btn").onclick = () => {
+  document.getElementById("screen-overlay").classList.add("hidden");
+  document.getElementById("app").style.display = "flex";
+  loadLevel();
+};
+
+function animLoop() {
+  if (!state.executing && document.getElementById("app").style.display !== "none") drawMap();
+  requestAnimationFrame(animLoop);
+}
+requestAnimationFrame(animLoop);
+</script>
+</body>
+</html>
