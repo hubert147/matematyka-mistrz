@@ -15,6 +15,7 @@ import { LiterStudySelectScreen } from './screens/liter/LiterStudySelectScreen'
 import { LiterMistrzGame } from './games/litermistrz/Game'
 import { PaniSowaGame } from './games/panisowa/Game'
 import { SkarbiecGame } from './games/skarbiec/Game'
+import { LabiryntGame } from './games/labirynt/Game'
 
 import { generateQuestions, generateReview, generateLiterReview } from './lib/claude'
 import { getQuestionsFromCache, saveQuestionsToCache } from './lib/questionsCache'
@@ -23,7 +24,7 @@ import { useTimer } from './hooks/useTimer'
 import { useHistory } from './hooks/useHistory'
 
 export default function App() {
-  const [screen, setScreen] = useState<'main' | 'start' | 'loading_q' | 'quiz' | 'loading_r' | 'results' | 'tutor' | 'chat' | 'liter_start' | 'liter_quiz' | 'liter_results' | 'liter_loading_r' | 'liter_study_select' | 'litermistrz_game' | 'panisowa_game' | 'skarbiec_game'>('main')
+  const [screen, setScreen] = useState<'main' | 'start' | 'loading_q' | 'quiz' | 'loading_r' | 'results' | 'tutor' | 'chat' | 'liter_start' | 'liter_quiz' | 'liter_results' | 'liter_loading_r' | 'liter_study_select' | 'litermistrz_game' | 'panisowa_game' | 'skarbiec_game' | 'labirynt_game'>('main')
   const [level, setLevel] = useState<Level>('easy')
   const [literLevel, setLiterLevel] = useState<LiterLevel>('easy')
   const [focusType, setFocusType] = useState<TaskType | undefined>()
@@ -142,6 +143,7 @@ export default function App() {
           onSelectLiterMistrz={() => setScreen('litermistrz_game')}
           onSelectPaniSowa={() => setScreen('panisowa_game')}
           onSelectSkarbiec={() => setScreen('skarbiec_game')}
+          onSelectLabirynt={() => setScreen('labirynt_game')}
         />
       )}
       
@@ -161,6 +163,9 @@ export default function App() {
 
       {/* MATEMATYCZNY SKARBIEC */}
       {screen === 'skarbiec_game' && <SkarbiecGame onBack={goToMain} />}
+
+      {/* SOWA W LABIRYNCIE */}
+      {screen === 'labirynt_game' && <LabiryntGame onBack={goToMain} />}
 
       {/* LITERKI PKG */}
       {screen === 'liter_start' && <LiterStartScreen onStart={handleStartLiter} onBack={goToMain} />}

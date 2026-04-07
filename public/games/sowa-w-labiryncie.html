@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Sowa w Labiryncie — majasieuczy.pl</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@400;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: 'Fredoka', sans-serif;
+    background: #050510;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  canvas { display: block; }
+
+  #ui-layer {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  #hud {
+    position: absolute;
+    top: 12px; left: 12px; right: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .hud-box {
+    background: rgba(5, 5, 16, 0.85);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 10px 18px;
+    color: white;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    border: 2px solid rgba(167, 139, 250, 0.25);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #word-display {
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+  }
+
+  .letter-slot {
+    width: 42px; height: 50px;
+    background: rgba(5, 5, 16, 0.85);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+    border: 2px solid rgba(167, 139, 250, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    color: #a78bfa;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .letter-slot.collected {
+    background: rgba(167, 139, 250, 0.25);
+    border-color: #a78bfa;
+    color: #e9d5ff;
+    box-shadow: 0 0 16px rgba(167, 139, 250, 0.4);
+    transform: scale(1.1);
+  }
+
+  #touch-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: auto;
+    display: grid;
+    grid-template-areas:
+      ". up ."
+      "left . right"
+      ". down .";
+    gap: 6px;
+  }
+
+  .ctrl-btn {
+    width: 64px; height: 64px;
+    border-radius: 16px;
+    background: rgba(167, 139, 250, 0.1);
+    backdrop-filter: blur(8px);
+    border: 2px solid rgba(167, 139, 250, 0.2);
+    color: #c4b5fd;
+    font-size: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.1s;
+  }
+
+  .ctrl-btn:active {
+    transform: scale(0.9);
+    background: rgba(167, 139, 250, 0.3);
+    border-color: #a78bfa;
+  }
+
+  #btn-up { grid-area: up; }
+  #btn-down { grid-area: down; }
+  #btn-left { grid-area: left; }
+  #btn-right { grid-area: right; }
+
+  #screen-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    pointer-events: auto;
+    background: radial-gradient(ellipse at center, #0f0a2a 0%, #050510 70%);
+  }
+
+  #screen-overlay.hidden { display: none; }
+
+  #screen-overlay h1 {
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 38px;
+    color: white;
+    text-align: center;
+    margin-bottom: 8px;
+    text-shadow: 0 0 30px rgba(167, 139, 250, 0.6);
+  }
+
+  #screen-overlay .subtitle {
+    font-size: 18px;
+    color: #c4b5fd;
+    margin-bottom: 28px;
+    text-align: center;
+    padding: 0 20px;
+  }
+
+  .big-icon {
+    font-size: 80px;
+    margin-bottom: 16px;
+    animation: owlGlow 3s ease-in-out infinite;
+  }
+
+  @keyframes owlGlow {
+    0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 10px rgba(167,139,250,0.3)); }
+    50% { transform: translateY(-10px); filter: drop-shadow(0 0 25px rgba(167,139,250,0.7)); }
+  }
+
+  .start-btn {
+    padding: 16px 44px;
+    border-radius: 18px;
+    border: 3px solid rgba(167, 139, 250, 0.3);
+    background: linear-gradient(135deg, #7c3aed, #5b21b6);
+    color: white;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 8px 30px rgba(124, 58, 237, 0.4);
+    -webkit-tap-highlight-color: transparent;
+    margin-top: 12px;
+  }
+
+  .start-btn:hover { transform: scale(1.05); }
+
+  .back-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 300;
+    padding: 12px 24px;
+    border-radius: 14px;
+    border: 2px solid rgba(167, 139, 250, 0.3);
+    background: rgba(5, 5, 16, 0.85);
+    backdrop-filter: blur(10px);
+    color: #c4b5fd;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.2s;
+  }
+
+  .back-btn:hover { background: rgba(124, 58, 237, 0.3); }
+
+  .stars { font-size: 36px; margin-bottom: 12px; letter-spacing: 8px; }
+
+  #level-info {
+    color: #a78bfa;
+    font-size: 15px;
+    margin-bottom: 16px;
+    font-family: 'Baloo 2', sans-serif;
+  }
+
+  .word-hint {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .word-hint .hint-letter {
+    width: 44px; height: 52px;
+    background: rgba(167, 139, 250, 0.15);
+    border: 2px solid rgba(167, 139, 250, 0.3);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: #c4b5fd;
+  }
+
+  #door-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: radial-gradient(ellipse at center, rgba(167,139,250,0.3) 0%, rgba(5,5,16,0) 60%);
+    display: none;
+    z-index: 50;
+    pointer-events: none;
+    animation: doorPulse 1s ease;
+  }
+
+  #door-overlay.active { display: block; }
+
+  @keyframes doorPulse {
+    0% { opacity: 0; }
+    50% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div id="screen-overlay">
+  <div class="big-icon">🦉✨</div>
+  <h1>Sowa w Labiryncie</h1>
+  <div class="subtitle">Zbieraj świetliki-literki w ciemnym labiryncie i złóż słowo żeby otworzyć drzwi!</div>
+  <div id="level-info">Poziom 1</div>
+  <div class="word-hint" id="word-hint"></div>
+  <button class="start-btn" id="start-btn">🦉 Wejdź do labiryntu!</button>
+  <button class="start-btn" onclick="goBack()" style="margin-top:8px; background: rgba(167,139,250,0.15); font-size:16px; padding: 10px 28px;">← Wróć do menu</button>
+</div>
+
+<canvas id="game"></canvas>
+
+<div id="door-overlay"></div>
+
+<div id="ui-layer">
+  <div id="hud">
+    <div class="hud-box">🦉 Lvl <span id="level-num">1</span></div>
+    <div class="hud-box">✨ <span id="fireflies-count">0</span>/<span id="fireflies-total">0</span></div>
+    <div class="hud-box">⭐ <span id="score">0</span></div>
+  </div>
+  <div id="word-display"></div>
+
+  <div id="touch-controls">
+    <button class="ctrl-btn" id="btn-up">▲</button>
+    <button class="ctrl-btn" id="btn-left">◀</button>
+    <button class="ctrl-btn" id="btn-right">▶</button>
+    <button class="ctrl-btn" id="btn-down">▼</button>
+  </div>
+</div>
+
+<button class="back-btn" onclick="goBack()">← Wróć</button>
+
+<script>
+function goBack() {
+  window.parent.postMessage({ type: 'labirynt:back' }, '*');
+}
+
+// ============================================================
+// 🦉 SOWA W LABIRYNCIE — Procedural Maze + Fog of War
+// ============================================================
+
+const WORDS = [
+  ["KOT","LAS","DOM","MYŚ","NOS","MAK","RAK","LIS","PĄK","OKO"],
+  ["SOWA","MAPA","LATO","RYBA","ŻABA","KOZA","LODY","OKNO","KURA","MYSZ"],
+  ["KWIAT","MORZE","ZAMEK","LIŚCI","BALON","PTAKI","LAMPA","MIODY","DRZEW","OBŁOK"],
+  ["JABŁKO","KWIATY","ŚLIMAK","ŻÓŁWIK","MOTYLE","SŁOŃCE","DESZCZ","GRZYBY"],
+];
+
+const CELL = 52;
+
+const state = {
+  level: 1,
+  score: 0,
+  word: "",
+  collectedLetters: [],
+  gameRunning: false,
+  moveDelay: 0,
+  revealRadius: 3.5,
+  visited: null,
+};
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+// Off-screen canvas for fog of war (reused every frame)
+const fogCanvas = document.createElement("canvas");
+const fogCtx = fogCanvas.getContext("2d");
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  fogCanvas.width = canvas.width;
+  fogCanvas.height = canvas.height;
+}
+window.addEventListener("resize", resize);
+resize();
+
+// ============================================================
+// MAZE STATE — initialized as empty so draw() is safe
+// ============================================================
+let mazeW = 0, mazeH = 0;
+let maze = [];
+let fireflies = [];
+let door = null;
+let owlPos = null;
+let ambientParticles = [];
+
+// ============================================================
+// MAZE GENERATION — Recursive Backtracking
+// ============================================================
+function generateMaze() {
+  mazeW = Math.min(8 + state.level * 2, 20);
+  mazeH = Math.min(6 + state.level * 2, 16);
+
+  const poolIdx = Math.min(Math.floor((state.level - 1) / 3), WORDS.length - 1);
+  state.word = WORDS[poolIdx][Math.floor(Math.random() * WORDS[poolIdx].length)];
+  state.collectedLetters = new Array(state.word.length).fill(false);
+  state.revealRadius = Math.max(2.5, 4 - state.level * 0.15);
+
+  maze = [];
+  for (let y = 0; y < mazeH; y++) {
+    maze[y] = [];
+    for (let x = 0; x < mazeW; x++) {
+      maze[y][x] = { N: true, S: true, E: true, W: true, visited: false };
+    }
+  }
+
+  const stack = [];
+  maze[0][0].visited = true;
+  stack.push({ x: 0, y: 0 });
+
+  while (stack.length > 0) {
+    const current = stack[stack.length - 1];
+    const neighbors = getUnvisitedNeighbors(current.x, current.y);
+    if (neighbors.length === 0) {
+      stack.pop();
+    } else {
+      const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+      removeWall(current.x, current.y, next.x, next.y);
+      maze[next.y][next.x].visited = true;
+      stack.push(next);
+    }
+  }
+
+  state.visited = [];
+  for (let y = 0; y < mazeH; y++) {
+    state.visited[y] = [];
+    for (let x = 0; x < mazeW; x++) {
+      state.visited[y][x] = false;
+    }
+  }
+
+  owlPos = { x: 0, y: 0, targetX: 0, targetY: 0, animX: 0, animY: 0, facing: 1, wingFrame: 0 };
+  state.visited[0][0] = true;
+
+  door = { x: mazeW - 1, y: mazeH - 1, open: false, glowFrame: 0 };
+
+  fireflies = [];
+  const emptyCells = [];
+  for (let y = 0; y < mazeH; y++) {
+    for (let x = 0; x < mazeW; x++) {
+      if (x === 0 && y === 0) continue;
+      if (x === door.x && y === door.y) continue;
+      const wallCount = [maze[y][x].N, maze[y][x].S, maze[y][x].E, maze[y][x].W].filter(Boolean).length;
+      emptyCells.push({ x, y, deadEnd: wallCount >= 3 });
+    }
+  }
+
+  const deadEnds = emptyCells.filter(c => c.deadEnd);
+  const available = deadEnds.length >= state.word.length
+    ? deadEnds.sort(() => Math.random() - 0.5)
+    : emptyCells.sort(() => Math.random() - 0.5);
+
+  for (let i = 0; i < state.word.length; i++) {
+    const cell = available[i % available.length];
+    fireflies.push({
+      char: state.word[i],
+      index: i,
+      cx: cell.x,
+      cy: cell.y,
+      collected: false,
+      phase: Math.random() * Math.PI * 2,
+      orbitRadius: 6 + Math.random() * 4,
+      orbitSpeed: 0.02 + Math.random() * 0.015,
+      trail: [],
+    });
+  }
+
+  ambientParticles = [];
+  for (let i = 0; i < 60; i++) {
+    ambientParticles.push({
+      x: Math.random() * mazeW * CELL,
+      y: Math.random() * mazeH * CELL,
+      size: 1 + Math.random() * 2,
+      speed: 0.15 + Math.random() * 0.3,
+      phase: Math.random() * Math.PI * 2,
+      alpha: 0.2 + Math.random() * 0.3,
+    });
+  }
+
+  updateUI();
+}
+
+function getUnvisitedNeighbors(x, y) {
+  const neighbors = [];
+  if (y > 0 && !maze[y-1][x].visited) neighbors.push({ x, y: y-1 });
+  if (y < mazeH-1 && !maze[y+1][x].visited) neighbors.push({ x, y: y+1 });
+  if (x > 0 && !maze[y][x-1].visited) neighbors.push({ x: x-1, y });
+  if (x < mazeW-1 && !maze[y][x+1].visited) neighbors.push({ x: x+1, y });
+  return neighbors;
+}
+
+function removeWall(x1, y1, x2, y2) {
+  if (x2 === x1 + 1) { maze[y1][x1].E = false; maze[y2][x2].W = false; }
+  if (x2 === x1 - 1) { maze[y1][x1].W = false; maze[y2][x2].E = false; }
+  if (y2 === y1 + 1) { maze[y1][x1].S = false; maze[y2][x2].N = false; }
+  if (y2 === y1 - 1) { maze[y1][x1].N = false; maze[y2][x2].S = false; }
+}
+
+// ============================================================
+// INPUT
+// ============================================================
+const keys = {};
+window.addEventListener("keydown", e => {
+  if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","w","a","s","d"].includes(e.key)) {
+    e.preventDefault();
+    keys[e.key] = true;
+  }
+});
+window.addEventListener("keyup", e => { keys[e.key] = false; });
+
+function addTouchBtn(id, key) {
+  const el = document.getElementById(id);
+  el.addEventListener("touchstart", e => { e.preventDefault(); keys[key] = true; });
+  el.addEventListener("touchend", e => { e.preventDefault(); keys[key] = false; });
+  el.addEventListener("mousedown", () => { keys[key] = true; });
+  el.addEventListener("mouseup", () => { keys[key] = false; });
+}
+
+addTouchBtn("btn-up", "ArrowUp");
+addTouchBtn("btn-down", "ArrowDown");
+addTouchBtn("btn-left", "ArrowLeft");
+addTouchBtn("btn-right", "ArrowRight");
+
+// ============================================================
+// UPDATE
+// ============================================================
+let lastMoveTime = 0;
+const MOVE_INTERVAL = 150;
+
+function update(now) {
+  if (!state.gameRunning || !owlPos || !maze.length) return;
+
+  if (now - lastMoveTime > MOVE_INTERVAL) {
+    let dx = 0, dy = 0;
+    if (keys["ArrowUp"] || keys["w"]) dy = -1;
+    else if (keys["ArrowDown"] || keys["s"]) dy = 1;
+    else if (keys["ArrowLeft"] || keys["a"]) { dx = -1; owlPos.facing = -1; }
+    else if (keys["ArrowRight"] || keys["d"]) { dx = 1; owlPos.facing = 1; }
+
+    if (dx !== 0 || dy !== 0) {
+      const nx = owlPos.x + dx;
+      const ny = owlPos.y + dy;
+
+      if (canMove(owlPos.x, owlPos.y, dx, dy)) {
+        owlPos.x = nx;
+        owlPos.y = ny;
+        owlPos.targetX = nx;
+        owlPos.targetY = ny;
+        lastMoveTime = now;
+
+        revealAround(nx, ny);
+
+        for (const f of fireflies) {
+          if (!f.collected && f.cx === nx && f.cy === ny) {
+            f.collected = true;
+            state.collectedLetters[f.index] = true;
+            state.score += 15;
+            updateUI();
+
+            if (state.collectedLetters.every(Boolean)) {
+              door.open = true;
+              const overlay = document.getElementById("door-overlay");
+              overlay.classList.add("active");
+              setTimeout(() => overlay.classList.remove("active"), 1000);
+            }
+          }
+        }
+
+        if (door.open && nx === door.x && ny === door.y) {
+          state.score += 30 + state.level * 10;
+          setTimeout(() => winLevel(), 400);
+        }
+      }
+    }
+  }
+
+  owlPos.animX += (owlPos.x * CELL - owlPos.animX) * 0.2;
+  owlPos.animY += (owlPos.y * CELL - owlPos.animY) * 0.2;
+  owlPos.wingFrame++;
+
+  for (const f of fireflies) {
+    if (f.collected) continue;
+    f.phase += f.orbitSpeed;
+    const fx = f.cx * CELL + CELL/2 + Math.cos(f.phase) * f.orbitRadius;
+    const fy = f.cy * CELL + CELL/2 + Math.sin(f.phase) * f.orbitRadius;
+    f.trail.push({ x: fx, y: fy, life: 20 });
+    if (f.trail.length > 12) f.trail.shift();
+    for (const t of f.trail) t.life--;
+  }
+
+  for (const p of ambientParticles) {
+    p.y -= p.speed;
+    p.x += Math.sin(Date.now() * 0.001 + p.phase) * 0.3;
+    if (p.y < -10) { p.y = mazeH * CELL + 10; p.x = Math.random() * mazeW * CELL; }
+  }
+
+  door.glowFrame++;
+}
+
+function canMove(x, y, dx, dy) {
+  const cell = maze[y][x];
+  if (dx === 1 && cell.E) return false;
+  if (dx === -1 && cell.W) return false;
+  if (dy === 1 && cell.S) return false;
+  if (dy === -1 && cell.N) return false;
+  const nx = x + dx, ny = y + dy;
+  if (nx < 0 || nx >= mazeW || ny < 0 || ny >= mazeH) return false;
+  return true;
+}
+
+function revealAround(cx, cy) {
+  const r = Math.ceil(state.revealRadius);
+  for (let dy = -r; dy <= r; dy++) {
+    for (let dx = -r; dx <= r; dx++) {
+      const nx = cx + dx, ny = cy + dy;
+      if (nx >= 0 && nx < mazeW && ny >= 0 && ny < mazeH) {
+        if (Math.sqrt(dx*dx + dy*dy) <= state.revealRadius) {
+          state.visited[ny][nx] = true;
+        }
+      }
+    }
+  }
+}
+
+// ============================================================
+// DRAW
+// ============================================================
+function draw() {
+  const W = canvas.width;
+  const H = canvas.height;
+
+  ctx.fillStyle = "#050510";
+  ctx.fillRect(0, 0, W, H);
+
+  // Not yet initialized — show dark screen
+  if (!owlPos || !maze.length) return;
+
+  const camX = owlPos.animX + CELL/2 - W/2;
+  const camY = owlPos.animY + CELL/2 - H/2;
+
+  ctx.save();
+  ctx.translate(-camX, -camY);
+
+  for (let y = 0; y < mazeH; y++) {
+    for (let x = 0; x < mazeW; x++) {
+      const px = x * CELL;
+      const py = y * CELL;
+
+      if (px - camX + CELL < -20 || px - camX > W + 20) continue;
+      if (py - camY + CELL < -20 || py - camY > H + 20) continue;
+
+      const distToOwl = Math.sqrt((x - owlPos.x)**2 + (y - owlPos.y)**2);
+      const inLight = distToOwl <= state.revealRadius;
+      const wasVisited = state.visited[y][x];
+
+      if (!inLight && !wasVisited) continue;
+
+      let alpha;
+      if (inLight) {
+        alpha = Math.max(0.15, 1 - distToOwl / (state.revealRadius + 0.5));
+      } else {
+        alpha = 0.08;
+      }
+
+      ctx.globalAlpha = alpha;
+
+      const floorBrightness = 18 + Math.sin(x * 3.7 + y * 2.3) * 5;
+      ctx.fillStyle = `rgb(${floorBrightness}, ${floorBrightness}, ${floorBrightness + 12})`;
+      ctx.fillRect(px + 2, py + 2, CELL - 4, CELL - 4);
+
+      if (inLight && alpha > 0.5) {
+        ctx.fillStyle = `rgba(255,255,255,0.03)`;
+        ctx.fillRect(px + 8, py + 12, 12, 8);
+        ctx.fillRect(px + 28, py + 6, 10, 6);
+        ctx.fillRect(px + 14, py + 30, 16, 6);
+      }
+
+      const cell = maze[y][x];
+      ctx.strokeStyle = inLight
+        ? `rgba(100, 80, 160, ${alpha * 0.9})`
+        : `rgba(60, 50, 90, 0.3)`;
+      ctx.lineWidth = inLight ? 3 : 2;
+      ctx.lineCap = "round";
+
+      if (cell.N) { ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + CELL, py); ctx.stroke(); }
+      if (cell.S) { ctx.beginPath(); ctx.moveTo(px, py + CELL); ctx.lineTo(px + CELL, py + CELL); ctx.stroke(); }
+      if (cell.W) { ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, py + CELL); ctx.stroke(); }
+      if (cell.E) { ctx.beginPath(); ctx.moveTo(px + CELL, py); ctx.lineTo(px + CELL, py + CELL); ctx.stroke(); }
+
+      if (inLight && alpha > 0.6) {
+        ctx.shadowColor = "#6d28d9";
+        ctx.shadowBlur = 6;
+        if (cell.N) { ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + CELL, py); ctx.stroke(); }
+        if (cell.S) { ctx.beginPath(); ctx.moveTo(px, py + CELL); ctx.lineTo(px + CELL, py + CELL); ctx.stroke(); }
+        if (cell.W) { ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, py + CELL); ctx.stroke(); }
+        if (cell.E) { ctx.beginPath(); ctx.moveTo(px + CELL, py); ctx.lineTo(px + CELL, py + CELL); ctx.stroke(); }
+        ctx.shadowBlur = 0;
+      }
+
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  for (const p of ambientParticles) {
+    const pcx = Math.floor(p.x / CELL);
+    const pcy = Math.floor(p.y / CELL);
+    if (pcx < 0 || pcx >= mazeW || pcy < 0 || pcy >= mazeH) continue;
+    const distP = Math.sqrt((pcx - owlPos.x)**2 + (pcy - owlPos.y)**2);
+    if (distP > state.revealRadius + 1) continue;
+    const pAlpha = p.alpha * Math.max(0, 1 - distP / (state.revealRadius + 1));
+    ctx.globalAlpha = pAlpha;
+    ctx.fillStyle = "#a78bfa";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  for (const f of fireflies) {
+    if (f.collected) continue;
+    const distF = Math.sqrt((f.cx - owlPos.x)**2 + (f.cy - owlPos.y)**2);
+    if (distF > state.revealRadius + 2) continue;
+
+    const brightness = distF <= state.revealRadius ? 1 : 0.3;
+    const fx = f.cx * CELL + CELL/2 + Math.cos(f.phase) * f.orbitRadius;
+    const fy = f.cy * CELL + CELL/2 + Math.sin(f.phase) * f.orbitRadius;
+
+    for (const t of f.trail) {
+      ctx.globalAlpha = (t.life / 20) * 0.4 * brightness;
+      ctx.fillStyle = "#e9d5ff";
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    const glowSize = 18 + Math.sin(Date.now() * 0.005 + f.phase) * 6;
+    const fireflyGrad = ctx.createRadialGradient(fx, fy, 0, fx, fy, glowSize);
+    fireflyGrad.addColorStop(0, `rgba(233, 213, 255, ${0.5 * brightness})`);
+    fireflyGrad.addColorStop(0.4, `rgba(167, 139, 250, ${0.2 * brightness})`);
+    fireflyGrad.addColorStop(1, "rgba(167, 139, 250, 0)");
+    ctx.fillStyle = fireflyGrad;
+    ctx.fillRect(fx - glowSize, fy - glowSize, glowSize * 2, glowSize * 2);
+
+    ctx.globalAlpha = brightness;
+    ctx.fillStyle = "#f5f3ff";
+    ctx.beginPath();
+    ctx.arc(fx, fy, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#e9d5ff";
+    ctx.font = "bold 16px 'Baloo 2'";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.shadowColor = "#a78bfa";
+    ctx.shadowBlur = 10;
+    ctx.fillText(f.char, fx, fy - 14);
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+  }
+
+  const doorPx = door.x * CELL;
+  const doorPy = door.y * CELL;
+  const doorDist = Math.sqrt((door.x - owlPos.x)**2 + (door.y - owlPos.y)**2);
+  const doorVisible = doorDist <= state.revealRadius + 1 || state.visited[door.y]?.[door.x];
+
+  if (doorVisible) {
+    const doorAlpha = doorDist <= state.revealRadius ? 1 : 0.2;
+    ctx.globalAlpha = doorAlpha;
+
+    if (door.open) {
+      const portalPulse = 12 + Math.sin(door.glowFrame * 0.08) * 6;
+      const portalGrad = ctx.createRadialGradient(
+        doorPx + CELL/2, doorPy + CELL/2, 0,
+        doorPx + CELL/2, doorPy + CELL/2, portalPulse + CELL/2
+      );
+      portalGrad.addColorStop(0, "rgba(167, 139, 250, 0.6)");
+      portalGrad.addColorStop(0.5, "rgba(124, 58, 237, 0.2)");
+      portalGrad.addColorStop(1, "rgba(124, 58, 237, 0)");
+      ctx.fillStyle = portalGrad;
+      ctx.fillRect(doorPx - 20, doorPy - 20, CELL + 40, CELL + 40);
+
+      ctx.fillStyle = "#7c3aed";
+      ctx.beginPath();
+      ctx.roundRect(doorPx + 8, doorPy + 4, CELL - 16, CELL - 8, 6);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(233, 213, 255, 0.3)";
+      ctx.fillRect(doorPx + CELL/2 - 2, doorPy + 8, 4, CELL - 16);
+      ctx.fillRect(doorPx + 12, doorPy + CELL/2 - 2, CELL - 24, 4);
+
+      ctx.font = "24px 'Baloo 2'";
+      ctx.textAlign = "center";
+      ctx.fillStyle = "white";
+      ctx.fillText("🚪✨", doorPx + CELL/2, doorPy + CELL/2 + 6);
+    } else {
+      ctx.fillStyle = "#3b1d6e";
+      ctx.beginPath();
+      ctx.roundRect(doorPx + 8, doorPy + 4, CELL - 16, CELL - 8, 6);
+      ctx.fill();
+
+      ctx.fillStyle = "#fbbf24";
+      ctx.beginPath();
+      ctx.arc(doorPx + CELL/2, doorPy + CELL/2, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(doorPx + CELL/2 - 3, doorPy + CELL/2, 6, 8);
+
+      ctx.font = "20px 'Baloo 2'";
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#a78bfa";
+      ctx.fillText("🔒", doorPx + CELL/2, doorPy + CELL/2 - 14);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  drawOwl(owlPos.animX + CELL/2, owlPos.animY + CELL/2, owlPos.facing, owlPos.wingFrame);
+
+  const owlScreenX = owlPos.animX + CELL/2;
+  const owlScreenY = owlPos.animY + CELL/2;
+  const lightRadius = state.revealRadius * CELL;
+  const flicker = lightRadius + Math.sin(Date.now() * 0.008) * 8;
+
+  const lightGrad = ctx.createRadialGradient(owlScreenX, owlScreenY, flicker * 0.1, owlScreenX, owlScreenY, flicker);
+  lightGrad.addColorStop(0, "rgba(167, 139, 250, 0.06)");
+  lightGrad.addColorStop(0.3, "rgba(124, 58, 237, 0.03)");
+  lightGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = lightGrad;
+  ctx.fillRect(owlScreenX - flicker, owlScreenY - flicker, flicker * 2, flicker * 2);
+
+  ctx.restore();
+
+  // Fog of War overlay
+  const owlSX = owlPos.animX + CELL/2 - camX;
+  const owlSY = owlPos.animY + CELL/2 - camY;
+
+  fogCtx.clearRect(0, 0, W, H);
+  fogCtx.fillStyle = "#050510";
+  fogCtx.fillRect(0, 0, W, H);
+
+  fogCtx.globalCompositeOperation = "destination-out";
+
+  const fogGrad = fogCtx.createRadialGradient(owlSX, owlSY, 0, owlSX, owlSY, flicker);
+  fogGrad.addColorStop(0, "rgba(0,0,0,1)");
+  fogGrad.addColorStop(0.7, "rgba(0,0,0,0.8)");
+  fogGrad.addColorStop(1, "rgba(0,0,0,0)");
+  fogCtx.fillStyle = fogGrad;
+  fogCtx.fillRect(0, 0, W, H);
+
+  for (let y = 0; y < mazeH; y++) {
+    for (let x = 0; x < mazeW; x++) {
+      if (!state.visited[y][x]) continue;
+      const distV = Math.sqrt((x - owlPos.x)**2 + (y - owlPos.y)**2);
+      if (distV <= state.revealRadius) continue;
+      const vx = x * CELL + CELL/2 - camX;
+      const vy = y * CELL + CELL/2 - camY;
+      if (vx < -CELL || vx > W + CELL || vy < -CELL || vy > H + CELL) continue;
+      fogCtx.fillStyle = "rgba(0,0,0,0.12)";
+      fogCtx.fillRect(vx - CELL/2, vy - CELL/2, CELL, CELL);
+    }
+  }
+
+  for (const f of fireflies) {
+    if (f.collected) continue;
+    const distFF = Math.sqrt((f.cx - owlPos.x)**2 + (f.cy - owlPos.y)**2);
+    if (distFF <= state.revealRadius || distFF > state.revealRadius + 3) continue;
+    const ffx = f.cx * CELL + CELL/2 - camX + Math.cos(f.phase) * f.orbitRadius;
+    const ffy = f.cy * CELL + CELL/2 - camY + Math.sin(f.phase) * f.orbitRadius;
+    const ffGrad = fogCtx.createRadialGradient(ffx, ffy, 0, ffx, ffy, 20);
+    ffGrad.addColorStop(0, "rgba(0,0,0,0.15)");
+    ffGrad.addColorStop(1, "rgba(0,0,0,0)");
+    fogCtx.fillStyle = ffGrad;
+    fogCtx.fillRect(ffx - 20, ffy - 20, 40, 40);
+  }
+
+  fogCtx.globalCompositeOperation = "source-over";
+  ctx.drawImage(fogCanvas, 0, 0);
+
+  // Edge vignette
+  const vig = ctx.createRadialGradient(W/2, H/2, H*0.25, W/2, H/2, H*0.75);
+  vig.addColorStop(0, "rgba(5,5,16,0)");
+  vig.addColorStop(1, "rgba(5,5,16,0.6)");
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, W, H);
+}
+
+// ============================================================
+// DRAW OWL
+// ============================================================
+function drawOwl(x, y, facing, wingFrame) {
+  const wingAngle = Math.sin(wingFrame * 0.12) * 0.3;
+  const bob = Math.sin(wingFrame * 0.06) * 2;
+
+  ctx.save();
+  ctx.translate(x, y + bob);
+  if (facing < 0) ctx.scale(-1, 1);
+
+  ctx.shadowColor = "#a78bfa";
+  ctx.shadowBlur = 15;
+
+  ctx.fillStyle = "#c4956a";
+  ctx.beginPath();
+  ctx.ellipse(0, 4, 14, 18, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = "#f5deb3";
+  ctx.beginPath();
+  ctx.ellipse(0, 8, 9, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.save();
+  ctx.rotate(wingAngle);
+  ctx.fillStyle = "#a67c52";
+  ctx.beginPath();
+  ctx.ellipse(11, 2, 7, 13, 0.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.fillStyle = "#c4956a";
+  ctx.beginPath();
+  ctx.arc(0, -12, 12, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#a67c52";
+  ctx.beginPath(); ctx.moveTo(-7, -21); ctx.lineTo(-4, -28); ctx.lineTo(-1, -20); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(7, -21); ctx.lineTo(4, -28); ctx.lineTo(1, -20); ctx.fill();
+
+  ctx.shadowColor = "#ffd700";
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = "#ffd700";
+  ctx.beginPath(); ctx.arc(-5, -13, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(5, -13, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = "#1a1a2e";
+  ctx.beginPath(); ctx.arc(-4, -13, 2.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(6, -13, 2.5, 0, Math.PI * 2); ctx.fill();
+
+  ctx.fillStyle = "#ff9933";
+  ctx.beginPath(); ctx.moveTo(-2, -8); ctx.lineTo(0, -3); ctx.lineTo(2, -8); ctx.fill();
+
+  ctx.fillStyle = "#ff9933";
+  ctx.fillRect(-7, 18, 5, 3);
+  ctx.fillRect(3, 18, 5, 3);
+
+  ctx.restore();
+}
+
+// ============================================================
+// LEVEL FLOW
+// ============================================================
+function winLevel() {
+  state.gameRunning = false;
+  const overlay = document.getElementById("screen-overlay");
+  overlay.classList.remove("hidden");
+
+  state.level++;
+
+  overlay.innerHTML = `
+    <div class="big-icon">🦉🚪✨</div>
+    <div class="stars">⭐⭐⭐</div>
+    <h1>Słowo: ${state.word}!</h1>
+    <div class="subtitle">Drzwi otwarte! Zdobyto ${state.score} punktów</div>
+    <div id="level-info">Następny: Poziom ${state.level} — większy labirynt!</div>
+    <div class="word-hint" id="word-hint"></div>
+    <button class="start-btn" id="start-btn">🦉 Dalej!</button>
+    <button class="start-btn" onclick="goBack()" style="margin-top:8px; background: rgba(167,139,250,0.15); font-size:16px; padding: 10px 28px;">← Wróć do menu</button>
+  `;
+
+  document.getElementById("start-btn").onclick = startLevel;
+}
+
+function startLevel() {
+  state.gameRunning = true;
+  document.getElementById("screen-overlay").classList.add("hidden");
+  generateMaze();
+  revealAround(0, 0);
+}
+
+function updateUI() {
+  document.getElementById("score").textContent = state.score;
+  document.getElementById("level-num").textContent = state.level;
+  document.getElementById("fireflies-count").textContent = state.collectedLetters.filter(Boolean).length;
+  document.getElementById("fireflies-total").textContent = state.word.length;
+
+  const wordDiv = document.getElementById("word-display");
+  wordDiv.innerHTML = "";
+  for (let i = 0; i < state.word.length; i++) {
+    const slot = document.createElement("div");
+    slot.className = "letter-slot" + (state.collectedLetters[i] ? " collected" : "");
+    slot.textContent = state.collectedLetters[i] ? state.word[i] : "?";
+    wordDiv.appendChild(slot);
+  }
+
+  const hint = document.getElementById("word-hint");
+  if (hint) {
+    hint.innerHTML = "";
+    for (let i = 0; i < (state.word || "???").length; i++) {
+      const div = document.createElement("div");
+      div.className = "hint-letter";
+      div.textContent = "?";
+      hint.appendChild(div);
+    }
+  }
+}
+
+// ============================================================
+// GAME LOOP
+// ============================================================
+function gameLoop(now) {
+  update(now);
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.getElementById("start-btn").onclick = startLevel;
+
+state.word = WORDS[0][Math.floor(Math.random() * WORDS[0].length)];
+updateUI();
+
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>

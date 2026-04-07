@@ -9,9 +9,10 @@ interface Props {
   onSelectLiterMistrz?: () => void
   onSelectPaniSowa?: () => void
   onSelectSkarbiec?: () => void
+  onSelectLabirynt?: () => void
 }
 
-export function MainScreen({ onSelectMathQuiz, onSelectLiterQuiz, onSelectTutor, onSelectChat, onSelectStudy, onSelectLiterMistrz, onSelectPaniSowa, onSelectSkarbiec }: Props) {
+export function MainScreen({ onSelectMathQuiz, onSelectLiterQuiz, onSelectTutor, onSelectChat, onSelectStudy, onSelectLiterMistrz, onSelectPaniSowa, onSelectSkarbiec, onSelectLabirynt }: Props) {
   const [showGry, setShowGry] = useState(false)
 
   return (
@@ -109,12 +110,25 @@ export function MainScreen({ onSelectMathQuiz, onSelectLiterQuiz, onSelectTutor,
               {onSelectSkarbiec && (
                 <button
                   onClick={() => { setShowGry(false); onSelectSkarbiec() }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 active:bg-orange-100 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 active:bg-orange-100 transition-colors border-b border-orange-100"
                 >
                   <span className="text-3xl">💰</span>
                   <div className="text-left">
                     <div className="font-black text-gray-800 text-sm">Skarbiec Trolla</div>
                     <div className="text-[0.6rem] text-gray-400 font-bold uppercase">Matematyka</div>
+                  </div>
+                </button>
+              )}
+
+              {onSelectLabirynt && (
+                <button
+                  onClick={() => { setShowGry(false); onSelectLabirynt() }}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 active:bg-orange-100 transition-colors"
+                >
+                  <span className="text-3xl">🌑</span>
+                  <div className="text-left">
+                    <div className="font-black text-gray-800 text-sm">Sowa w Labiryncie</div>
+                    <div className="text-[0.6rem] text-gray-400 font-bold uppercase">Mgła i literki</div>
                   </div>
                 </button>
               )}
