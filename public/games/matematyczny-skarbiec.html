@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Matematyczny Skarbiec — majasieuczy.pl</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@400;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --cave-dark: #0d0d1a;
+    --cave-mid: #1a1a2e;
+    --cave-light: #2a2a4a;
+    --gold: #ffd700;
+    --gold-dark: #b8960f;
+    --crystal-blue: #60a5fa;
+    --crystal-purple: #a78bfa;
+    --lava: #ef4444;
+    --lava-glow: #ff6b35;
+    --troll-green: #4ade80;
+    --troll-dark: #166534;
+    --player-red: #f87171;
+    --player-hat: #dc2626;
+    --ui-panel: rgba(13, 13, 26, 0.9);
+    --success: #4ade80;
+    --danger: #f87171;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    font-family: 'Fredoka', sans-serif;
+    background: var(--cave-dark);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  canvas { display: block; }
+
+  #ui-layer {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  #hud {
+    position: absolute;
+    top: 12px; left: 12px; right: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .hud-box {
+    background: var(--ui-panel);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 10px 18px;
+    color: white;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    border: 2px solid rgba(255,215,0,0.2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #coins-collected {
+    position: absolute;
+    top: 65px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 90%;
+  }
+
+  .coin-slot {
+    width: 44px; height: 44px;
+    background: rgba(255, 215, 0, 0.15);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--gold);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .coin-slot.filled {
+    background: rgba(255, 215, 0, 0.3);
+    border-color: var(--gold);
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+    transform: scale(1.1);
+  }
+
+  #target-display {
+    position: absolute;
+    top: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ui-panel);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 14px;
+    padding: 6px 20px;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 16px;
+    color: #fbbf24;
+  }
+
+  #touch-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px;
+    pointer-events: auto;
+  }
+
+  .ctrl-btn {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: rgba(255,215,0,0.12);
+    backdrop-filter: blur(8px);
+    border: 2px solid rgba(255,215,0,0.25);
+    color: var(--gold);
+    font-size: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.1s;
+  }
+
+  .ctrl-btn:active { transform: scale(0.9); background: rgba(255,215,0,0.3); }
+  .ctrl-group { display: flex; gap: 12px; }
+
+  #troll-modal {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    pointer-events: auto;
+  }
+
+  #troll-modal.active { display: flex; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .troll-panel {
+    background: linear-gradient(145deg, #14532d, #166534);
+    border-radius: 28px;
+    padding: 32px 28px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    border: 3px solid rgba(74, 222, 128, 0.4);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 40px rgba(74, 222, 128, 0.15);
+  }
+
+  .troll-icon { font-size: 64px; margin-bottom: 8px; animation: trollBounce 1.5s ease infinite; }
+  @keyframes trollBounce { 0%,100%{transform:translateY(0) rotate(-2deg)} 50%{transform:translateY(-10px) rotate(2deg)} }
+
+  .troll-speech { font-family: 'Baloo 2', sans-serif; color: #bbf7d0; font-size: 16px; margin-bottom: 8px; }
+  .troll-demand { font-family: 'Baloo 2', sans-serif; color: var(--gold); font-size: 48px; font-weight: 800; margin-bottom: 4px; text-shadow: 0 2px 15px rgba(255,215,0,0.4); }
+  .troll-your-sum { font-family: 'Baloo 2', sans-serif; font-size: 20px; margin-bottom: 20px; min-height: 30px; }
+
+  .troll-coins-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
+
+  .troll-coin {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffd700, #b8960f);
+    border: 3px solid #ffd700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: #1a1a2e;
+    cursor: pointer;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    box-shadow: 0 4px 15px rgba(255,215,0,0.3);
+  }
+
+  .troll-coin:hover { transform: scale(1.1); }
+  .troll-coin.selected { border-color: var(--success); box-shadow: 0 0 20px rgba(74,222,128,0.6); transform: scale(1.15); }
+
+  .troll-btn-row { display: flex; gap: 12px; justify-content: center; margin-top: 16px; }
+
+  .troll-btn {
+    padding: 14px 32px;
+    border-radius: 16px;
+    border: 3px solid rgba(255,255,255,0.2);
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .troll-btn.submit { background: linear-gradient(135deg, #ffd700, #b8960f); color: #1a1a2e; }
+  .troll-btn.reset { background: rgba(255,255,255,0.1); color: white; }
+  .troll-btn:hover { transform: scale(1.05); }
+  .troll-result { font-family: 'Baloo 2', sans-serif; font-size: 24px; font-weight: 700; margin-top: 16px; min-height: 36px; }
+
+  #screen-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    pointer-events: auto;
+    background: linear-gradient(180deg, #0d0d1a 0%, #1a1a2e 40%, #14532d 100%);
+  }
+
+  #screen-overlay.hidden { display: none; }
+
+  #screen-overlay h1 {
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 40px;
+    color: white;
+    text-align: center;
+    margin-bottom: 8px;
+    text-shadow: 0 3px 20px rgba(255,215,0,0.4);
+  }
+
+  #screen-overlay .subtitle { font-size: 20px; color: #fbbf24; margin-bottom: 24px; }
+
+  .big-icon { font-size: 90px; margin-bottom: 20px; animation: iconFloat 3s ease-in-out infinite; }
+  @keyframes iconFloat { 0%,100%{transform:translateY(0) rotate(-3deg)} 50%{transform:translateY(-12px) rotate(3deg)} }
+
+  .start-btn {
+    padding: 18px 48px;
+    border-radius: 20px;
+    border: 3px solid rgba(255,215,0,0.3);
+    background: linear-gradient(135deg, #ffd700, #b8960f);
+    color: #1a1a2e;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 8px 30px rgba(255,215,0,0.3);
+    -webkit-tap-highlight-color: transparent;
+    margin: 8px;
+  }
+
+  .start-btn:hover { transform: scale(1.05); }
+
+  .btn-back {
+    padding: 12px 32px;
+    border-radius: 16px;
+    border: 2px solid rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.08);
+    color: white;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+
+  .stars { font-size: 40px; margin-bottom: 12px; letter-spacing: 8px; }
+  #level-info { color: #86efac; font-size: 16px; margin-bottom: 20px; font-family: 'Baloo 2', sans-serif; }
+</style>
+</head>
+<body>
+
+<div id="screen-overlay">
+  <div class="big-icon">🧙💰</div>
+  <h1>Matematyczny Skarbiec</h1>
+  <div class="subtitle">Zbieraj monety, pokonaj trolla!</div>
+  <div id="level-info">Poziom 1 — Cel: suma do 5</div>
+  <button class="start-btn" id="start-btn">⛏️ Wejdź do jaskini!</button>
+  <button class="btn-back" onclick="goBack()">← Wróć do menu</button>
+</div>
+
+<canvas id="game"></canvas>
+
+<div id="ui-layer">
+  <div id="hud">
+    <div class="hud-box">❤️ ×<span id="lives">3</span></div>
+    <div class="hud-box">⭐ <span id="score">0</span></div>
+    <div class="hud-box">🗺️ Lvl <span id="level-num">1</span></div>
+  </div>
+  <div id="target-display">🧌 Troll chce: <strong id="target-num">?</strong></div>
+  <div id="coins-collected"></div>
+  <div id="touch-controls">
+    <div class="ctrl-group">
+      <button class="ctrl-btn" id="btn-left">◀</button>
+      <button class="ctrl-btn" id="btn-right">▶</button>
+    </div>
+    <button class="ctrl-btn" id="btn-jump">▲</button>
+  </div>
+</div>
+
+<div id="troll-modal">
+  <div class="troll-panel">
+    <div class="troll-icon">🧌</div>
+    <div class="troll-speech">Nie przejdziesz! Daj mi dokładnie...</div>
+    <div class="troll-demand" id="troll-demand">7</div>
+    <div class="troll-speech">Wybierz monety które dają tę sumę:</div>
+    <div class="troll-coins-row" id="troll-coins"></div>
+    <div class="troll-your-sum" id="troll-sum"></div>
+    <div class="troll-btn-row">
+      <button class="troll-btn reset" id="troll-reset">🔄 Reset</button>
+      <button class="troll-btn submit" id="troll-submit">✅ Oddaj!</button>
+    </div>
+    <div class="troll-result" id="troll-result"></div>
+  </div>
+</div>
+
+<script>
+function goBack() {
+  window.parent.postMessage({ type: 'skarbiec:back' }, '*');
+}
+
+const LEVEL_CONFIG = [
+  { maxCoinValue: 3, targetMin: 3, targetMax: 5,  coinCount: 8,  enemyCount: 0 },
+  { maxCoinValue: 4, targetMin: 4, targetMax: 7,  coinCount: 9,  enemyCount: 1 },
+  { maxCoinValue: 5, targetMin: 5, targetMax: 9,  coinCount: 10, enemyCount: 1 },
+  { maxCoinValue: 5, targetMin: 6, targetMax: 10, coinCount: 10, enemyCount: 2 },
+  { maxCoinValue: 6, targetMin: 8, targetMax: 12, coinCount: 12, enemyCount: 2 },
+  { maxCoinValue: 7, targetMin: 10, targetMax: 15, coinCount: 12, enemyCount: 3 },
+  { maxCoinValue: 8, targetMin: 12, targetMax: 18, coinCount: 14, enemyCount: 3 },
+  { maxCoinValue: 9, targetMin: 15, targetMax: 20, coinCount: 15, enemyCount: 4 },
+];
+
+const state = {
+  level: 1, score: 0, lives: 3, target: 0,
+  collectedCoins: [], paused: false, gameRunning: false,
+  cameraX: 0, trollReached: false,
+};
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener("resize", resize);
+resize();
+
+// ── FIX: inicjalizuj jako puste tablice żeby draw() nie crashował przed startLevel ──
+let player = { x:80, y:300, vx:0, vy:0, w:36, h:48, onGround:false, facing:1, frame:0, runFrame:0 };
+let platforms = [], coins = [], bats = [], troll = null, particles = [], lavaPits = [], crystals = [];
+
+const GRAVITY = 0.55, JUMP_FORCE = -12.5, MOVE_SPEED = 4.5;
+
+function getConfig() {
+  return LEVEL_CONFIG[Math.min(state.level - 1, LEVEL_CONFIG.length - 1)];
+}
+
+function generateLevel() {
+  const cfg = getConfig();
+  state.target = cfg.targetMin + Math.floor(Math.random() * (cfg.targetMax - cfg.targetMin + 1));
+  state.collectedCoins = [];
+  state.trollReached = false;
+
+  const levelWidth = cfg.coinCount * 280 + 1200;
+
+  player = { x:80, y:300, vx:0, vy:0, w:36, h:48, onGround:false, facing:1, frame:0, runFrame:0 };
+
+  platforms = [];
+  platforms.push({ x:0, y:canvas.height - 70, w:levelWidth, h:70, type:"ground" });
+  for (let i = 0; i < cfg.coinCount * 2 + 6; i++) {
+    platforms.push({
+      x: 120 + i * 140 + Math.random() * 60,
+      y: canvas.height - 160 - Math.random() * 250,
+      w: 80 + Math.random() * 70,
+      h: 18,
+      type: Math.random() > 0.6 ? "stone" : "rock",
+    });
+  }
+
+  coins = [];
+  const coinPlatforms = platforms.filter(p => p.type !== "ground")
+    .sort(() => Math.random() - 0.5)
+    .slice(0, cfg.coinCount);
+
+  for (let i = 0; i < cfg.coinCount; i++) {
+    const plat = coinPlatforms[i] || platforms[Math.min(i + 2, platforms.length - 1)];
+    let val = i < 3
+      ? Math.min(Math.max(1, Math.floor(state.target / 3) + Math.floor(Math.random() * 2)), cfg.maxCoinValue)
+      : 1 + Math.floor(Math.random() * cfg.maxCoinValue);
+    coins.push({
+      value: val,
+      x: plat.x + plat.w / 2 - 16,
+      y: plat.y - 45,
+      w: 36, h: 36,
+      collected: false,
+      bobOffset: Math.random() * Math.PI * 2,
+    });
+  }
+
+  bats = [];
+  for (let i = 0; i < cfg.enemyCount; i++) {
+    const bx = 500 + i * 400 + Math.random() * 200;
+    const by = canvas.height - 200 - Math.random() * 150;
+    bats.push({ x:bx, y:by, w:36, h:28, baseY:by, patrolLeft:bx-80, patrolRight:bx+80, vx:1.8, frame:0 });
+  }
+
+  troll = {
+    x: levelWidth - 200,
+    y: canvas.height - 70 - 72,
+    w: 60, h: 72, frame: 0,
+  };
+
+  lavaPits = [];
+  for (let i = 0; i < 4; i++) {
+    lavaPits.push({
+      x: 300 + i * (levelWidth / 5) + Math.random() * 100,
+      y: canvas.height - 70,
+      w: 60 + Math.random() * 40,
+    });
+  }
+
+  crystals = [];
+  for (let i = 0; i < 20; i++) {
+    crystals.push({
+      x: Math.random() * levelWidth,
+      y: canvas.height - 70 - Math.random() * 400,
+      size: 4 + Math.random() * 8,
+      color: Math.random() > 0.5 ? "#60a5fa" : "#a78bfa",
+      twinkleOffset: Math.random() * Math.PI * 2,
+    });
+  }
+
+  particles = [];
+  state.cameraX = 0;
+  updateUI();
+}
+
+// Input
+const keys = {};
+window.addEventListener("keydown", e => { keys[e.key] = true; });
+window.addEventListener("keyup", e => { keys[e.key] = false; });
+
+function addTouchEvents(el, key) {
+  el.addEventListener("touchstart", e => { e.preventDefault(); keys[key] = true; }, { passive: false });
+  el.addEventListener("touchend", e => { e.preventDefault(); keys[key] = false; }, { passive: false });
+  el.addEventListener("mousedown", () => keys[key] = true);
+  el.addEventListener("mouseup", () => keys[key] = false);
+}
+
+addTouchEvents(document.getElementById("btn-left"), "ArrowLeft");
+addTouchEvents(document.getElementById("btn-right"), "ArrowRight");
+addTouchEvents(document.getElementById("btn-jump"), "ArrowUp");
+
+function update() {
+  if (state.paused || !state.gameRunning) return;
+
+  player.vx = 0;
+  if (keys["ArrowLeft"] || keys["a"]) { player.vx = -MOVE_SPEED; player.facing = -1; }
+  if (keys["ArrowRight"] || keys["d"]) { player.vx = MOVE_SPEED; player.facing = 1; }
+  if ((keys["ArrowUp"] || keys["w"] || keys[" "]) && player.onGround) {
+    player.vy = JUMP_FORCE; player.onGround = false;
+  }
+
+  player.vy += GRAVITY;
+  player.x += player.vx;
+  player.y += player.vy;
+  if (player.vx !== 0) player.runFrame++;
+
+  player.onGround = false;
+  for (const p of platforms) {
+    if (player.x + player.w > p.x && player.x < p.x + p.w &&
+        player.y + player.h > p.y && player.y + player.h < p.y + p.h + 10 && player.vy >= 0) {
+      player.y = p.y - player.h; player.vy = 0; player.onGround = true;
+    }
+  }
+
+  for (const lava of lavaPits) {
+    if (player.x + player.w > lava.x && player.x < lava.x + lava.w && player.y + player.h > lava.y - 5) {
+      player.x = 80; player.y = 300; player.vy = 0;
+      state.lives--;
+      if (state.collectedCoins.length > 0) state.collectedCoins.pop();
+      updateUI();
+      if (state.lives <= 0) gameOver();
+    }
+  }
+
+  if (player.y > canvas.height + 50) {
+    player.x = 80; player.y = 300; player.vy = 0;
+    state.lives--; updateUI();
+    if (state.lives <= 0) gameOver();
+  }
+
+  const targetCamX = player.x - canvas.width * 0.35;
+  state.cameraX += (targetCamX - state.cameraX) * 0.08;
+  if (state.cameraX < 0) state.cameraX = 0;
+
+  for (const c of coins) {
+    if (c.collected) continue;
+    if (player.x + player.w > c.x && player.x < c.x + c.w &&
+        player.y + player.h > c.y && player.y < c.y + c.h) {
+      c.collected = true;
+      state.collectedCoins.push(c.value);
+      state.score += 5;
+      spawnParticles(c.x + c.w/2, c.y + c.h/2, "#ffd700", 10);
+      updateUI();
+    }
+  }
+
+  for (const bat of bats) {
+    bat.x += bat.vx;
+    if (bat.x <= bat.patrolLeft || bat.x >= bat.patrolRight) bat.vx *= -1;
+    bat.y = bat.baseY + Math.sin(bat.frame * 0.06) * 20;
+    bat.frame++;
+
+    if (player.x + player.w > bat.x + 4 && player.x < bat.x + bat.w - 4 &&
+        player.y + player.h > bat.y + 4 && player.y < bat.y + bat.h - 4) {
+      player.vy = -8;
+      player.x -= player.facing * 60;
+      if (state.collectedCoins.length > 0) {
+        state.collectedCoins.pop();
+        spawnParticles(player.x + player.w/2, player.y, "#f87171", 8);
+      }
+      state.lives--; updateUI();
+      if (state.lives <= 0) gameOver();
+    }
+  }
+
+  if (troll && !state.trollReached &&
+      player.x + player.w > troll.x && player.x < troll.x + troll.w &&
+      player.y + player.h > troll.y) {
+    state.trollReached = true;
+    state.paused = true;
+    showTrollModal();
+  }
+
+  if (troll) troll.frame++;
+  player.frame++;
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.life--;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+
+function spawnParticles(x, y, color, count) {
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * 5,
+      vy: (Math.random() - 0.5) * 5 - 2,
+      life: 30 + Math.random() * 20,
+      maxLife: 50,
+      color,
+      size: 3 + Math.random() * 4,
+    });
+  }
+}
+
+function draw() {
+  const W = canvas.width, H = canvas.height, cam = state.cameraX;
+
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, "#070710"); bg.addColorStop(0.4, "#0d0d1a");
+  bg.addColorStop(0.8, "#1a1a2e"); bg.addColorStop(1, "#0d0d1a");
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = "#1a1a2e";
+  for (let i = 0; i < 30; i++) {
+    const sx = (i * 127 + 30) % (W + 600) - cam * 0.2;
+    const sh = 30 + (i * 53 % 60);
+    ctx.beginPath(); ctx.moveTo(sx-12,0); ctx.lineTo(sx,sh); ctx.lineTo(sx+12,0); ctx.fill();
+  }
+
+  for (const cr of crystals) {
+    const cx = cr.x - cam * 0.4;
+    if (cx < -20 || cx > W + 20) continue;
+    const twinkle = 0.3 + Math.sin(Date.now() * 0.003 + cr.twinkleOffset) * 0.3;
+    ctx.globalAlpha = twinkle; ctx.fillStyle = cr.color;
+    ctx.beginPath();
+    ctx.moveTo(cx, cr.y - cr.size); ctx.lineTo(cx + cr.size*0.4, cr.y);
+    ctx.lineTo(cx, cr.y + cr.size*0.3); ctx.lineTo(cx - cr.size*0.4, cr.y);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  for (const p of platforms) {
+    const px = p.x - cam;
+    if (px + p.w < -50 || px > W + 50) continue;
+    if (p.type === "ground") {
+      const grd = ctx.createLinearGradient(0, p.y, 0, p.y + p.h);
+      grd.addColorStop(0, "#3d3d5c"); grd.addColorStop(0.2, "#2a2a4a"); grd.addColorStop(1, "#1a1a2e");
+      ctx.fillStyle = grd; ctx.fillRect(px, p.y, p.w, p.h);
+      ctx.fillStyle = "#4a4a6a";
+      for (let r = 0; r < p.w; r += 8) {
+        const rh = 3 + Math.sin(r * 0.4) * 2;
+        ctx.fillRect(px + r, p.y - rh, 6, rh);
+      }
+    } else {
+      drawRockPlatform(px, p.y, p.w, p.h);
+    }
+  }
+
+  for (const lava of lavaPits) {
+    const lx = lava.x - cam;
+    if (lx + lava.w < -20 || lx > W + 20) continue;
+    const lavaGrad = ctx.createRadialGradient(lx+lava.w/2,lava.y,0, lx+lava.w/2,lava.y,lava.w);
+    lavaGrad.addColorStop(0, "rgba(255,107,53,0.3)"); lavaGrad.addColorStop(1, "rgba(255,107,53,0)");
+    ctx.fillStyle = lavaGrad; ctx.fillRect(lx-lava.w/2, lava.y-lava.w, lava.w*2, lava.w);
+    ctx.fillStyle = "#ef4444"; ctx.fillRect(lx, lava.y-4, lava.w, 8);
+    const bx2 = lx + lava.w/2 + Math.sin(Date.now()*0.005)*15;
+    const by2 = lava.y - 6 - Math.abs(Math.sin(Date.now()*0.008))*10;
+    ctx.fillStyle = "#ff6b35"; ctx.beginPath(); ctx.arc(bx2, by2, 4, 0, Math.PI*2); ctx.fill();
+  }
+
+  for (const c of coins) {
+    if (c.collected) continue;
+    const cx = c.x - cam;
+    if (cx + c.w < -20 || cx > W + 20) continue;
+    const bob = Math.sin(Date.now()*0.004 + c.bobOffset)*5;
+    const spin = Math.cos(Date.now()*0.003 + c.bobOffset);
+    const coinW = Math.abs(spin)*c.w*0.8 + c.w*0.2;
+    ctx.shadowColor = "#ffd700"; ctx.shadowBlur = 12;
+    const coinGrad = ctx.createLinearGradient(cx, c.y+bob, cx+coinW, c.y+bob);
+    coinGrad.addColorStop(0,"#ffd700"); coinGrad.addColorStop(0.5,"#fff2a8"); coinGrad.addColorStop(1,"#b8960f");
+    ctx.fillStyle = coinGrad;
+    ctx.beginPath(); ctx.ellipse(cx+c.w/2, c.y+c.h/2+bob, coinW/2, c.h/2, 0, 0, Math.PI*2); ctx.fill();
+    if (Math.abs(spin) > 0.3) {
+      ctx.shadowBlur = 0; ctx.fillStyle = "#1a1a2e";
+      ctx.font = "bold 18px 'Baloo 2'"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(c.value, cx+c.w/2, c.y+c.h/2+bob+1);
+    }
+    ctx.shadowBlur = 0;
+  }
+
+  for (const bat of bats) {
+    const bx = bat.x - cam;
+    if (bx+bat.w < -20 || bx > W+20) continue;
+    drawBat(bx, bat.y, bat.w, bat.h, bat.frame);
+  }
+
+  if (troll) {
+    const tx = troll.x - cam;
+    if (tx > -80 && tx < W+80) drawTroll(tx, troll.y, troll.w, troll.h, troll.frame);
+  }
+
+  drawPlayer(player.x-cam, player.y, player.w, player.h, player.facing, player.runFrame, player.onGround);
+
+  for (const p of particles) {
+    ctx.globalAlpha = p.life/p.maxLife; ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x-cam, p.y, p.size*(p.life/p.maxLife), 0, Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  const plx = player.x-cam+player.w/2, ply = player.y+player.h/2;
+  const torchFlicker = 180 + Math.sin(Date.now()*0.01)*30;
+  const lightGrad = ctx.createRadialGradient(plx,ply,0,plx,ply,torchFlicker);
+  lightGrad.addColorStop(0,"rgba(255,200,80,0.08)"); lightGrad.addColorStop(0.5,"rgba(255,150,50,0.03)"); lightGrad.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle = lightGrad; ctx.fillRect(0,0,W,H);
+
+  const vig = ctx.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.9);
+  vig.addColorStop(0,"rgba(0,0,0,0)"); vig.addColorStop(1,"rgba(0,0,0,0.5)");
+  ctx.fillStyle = vig; ctx.fillRect(0,0,W,H);
+}
+
+function drawPlayer(x, y, w, h, facing, runFrame, onGround) {
+  ctx.save(); ctx.translate(x+w/2, y+h/2);
+  if (facing < 0) ctx.scale(-1,1);
+  const bobY = onGround ? Math.sin(runFrame*0.3)*2 : 0;
+  const legSwing = onGround ? Math.sin(runFrame*0.3)*6 : 2;
+
+  ctx.fillStyle = "#4a3728"; ctx.fillRect(-8,16+bobY,7,12); ctx.fillRect(2,16+bobY+legSwing*0.5,7,12);
+  ctx.fillStyle = "#dc2626"; ctx.beginPath(); ctx.roundRect(-12,-6+bobY,24,24,4); ctx.fill();
+  ctx.fillStyle = "#92400e"; ctx.fillRect(-12,12+bobY,24,4);
+  ctx.fillStyle = "#ffd700"; ctx.fillRect(-3,11+bobY,6,6);
+  ctx.fillStyle = "#fbbf24"; ctx.beginPath(); ctx.arc(0,-12+bobY,11,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = "#1a1a2e";
+  ctx.beginPath(); ctx.arc(-4,-13+bobY,2.5,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(4,-13+bobY,2.5,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle = "#1a1a2e"; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(0,-10+bobY,5,0.1*Math.PI,0.9*Math.PI); ctx.stroke();
+  ctx.fillStyle = "#f59e0b"; ctx.beginPath(); ctx.ellipse(0,-18+bobY,13,7,0,Math.PI,2*Math.PI); ctx.fill();
+  const lp = 3 + Math.sin(Date.now()*0.008)*1;
+  ctx.fillStyle = "#fef3c7"; ctx.beginPath(); ctx.arc(0,-22+bobY,lp,0,Math.PI*2); ctx.fill();
+  ctx.shadowColor = "#fef3c7"; ctx.shadowBlur = 10; ctx.fill(); ctx.shadowBlur = 0;
+  ctx.fillStyle = "#fbbf24"; ctx.fillRect(10,0+bobY,6,14);
+  ctx.strokeStyle = "#92400e"; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(14,2+bobY); ctx.lineTo(22,-10+bobY); ctx.stroke();
+  ctx.fillStyle = "#6b7280";
+  ctx.beginPath(); ctx.moveTo(19,-12+bobY); ctx.lineTo(26,-8+bobY); ctx.lineTo(22,-6+bobY); ctx.fill();
+  ctx.restore();
+}
+
+function drawTroll(x, y, w, h, frame) {
+  const bob = Math.sin(frame*0.04)*3;
+  ctx.save(); ctx.translate(x+w/2, y+h/2+bob);
+  ctx.fillStyle = "#166534"; ctx.beginPath(); ctx.roundRect(-w/2,-h/2+10,w,h-10,8); ctx.fill();
+  ctx.fillStyle = "#15803d"; ctx.beginPath(); ctx.ellipse(0,10,20,18,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = "#166534"; ctx.beginPath(); ctx.arc(0,-h/2+8,22,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(-22,-h/2+5,8,12,-0.3,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(22,-h/2+5,8,12,0.3,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = "#fbbf24";
+  ctx.beginPath(); ctx.arc(-8,-h/2+4,7,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(8,-h/2+4,7,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = "#1a1a2e";
+  ctx.beginPath(); ctx.arc(-7,-h/2+5,3.5,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(9,-h/2+5,3.5,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = "#14532d"; ctx.beginPath(); ctx.ellipse(0,-h/2+14,6,5,0,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle = "#0d3320"; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(0,-h/2+22,10,1.1*Math.PI,1.9*Math.PI); ctx.stroke();
+  ctx.fillStyle = "#fef9c3"; ctx.fillRect(-6,-h/2+18,5,6); ctx.fillRect(2,-h/2+18,5,6);
+  ctx.fillStyle = "#92400e";
+  ctx.save(); ctx.translate(28,-5); ctx.rotate(0.3+Math.sin(frame*0.03)*0.1);
+  ctx.fillRect(-4,-30,8,35);
+  ctx.fillStyle = "#78350f"; ctx.beginPath(); ctx.ellipse(0,-32,12,10,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = "#6b7280";
+  ctx.beginPath(); ctx.arc(-10,-35,3,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(8,-30,3,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = "#ffd700"; ctx.font = "bold 24px 'Baloo 2'"; ctx.textAlign = "center";
+  ctx.fillText(state.target, 0, -h/2-16);
+  ctx.restore();
+}
+
+function drawBat(x, y, w, h, frame) {
+  const wingFlap = Math.sin(frame*0.2)*0.6;
+  ctx.save(); ctx.translate(x+w/2, y+h/2);
+  ctx.fillStyle = "#4a1d6a";
+  ctx.save(); ctx.rotate(-wingFlap); ctx.beginPath(); ctx.ellipse(-18,0,14,6,-0.2,0,Math.PI*2); ctx.fill(); ctx.restore();
+  ctx.save(); ctx.rotate(wingFlap); ctx.beginPath(); ctx.ellipse(18,0,14,6,0.2,0,Math.PI*2); ctx.fill(); ctx.restore();
+  ctx.fillStyle = "#581c87"; ctx.beginPath(); ctx.ellipse(0,0,10,12,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = "#f87171";
+  ctx.beginPath(); ctx.arc(-4,-3,3,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(4,-3,3,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawRockPlatform(x, y, w, h) {
+  const grad = ctx.createLinearGradient(x,y,x,y+h);
+  grad.addColorStop(0,"#4a4a6a"); grad.addColorStop(1,"#2a2a4a");
+  ctx.fillStyle = grad; ctx.beginPath(); ctx.roundRect(x,y,w,h,6); ctx.fill();
+  ctx.fillStyle = "#5a5a7a";
+  ctx.fillRect(x+5,y+2,8,4); ctx.fillRect(x+w-20,y+3,10,3); ctx.fillRect(x+w/2,y+1,6,5);
+}
+
+function showTrollModal() {
+  const modal = document.getElementById("troll-modal");
+  modal.classList.add("active");
+  document.getElementById("troll-demand").textContent = state.target;
+  const coinsRow = document.getElementById("troll-coins");
+  coinsRow.innerHTML = "";
+  const selectedIndices = new Set();
+
+  state.collectedCoins.forEach((val, idx) => {
+    const coin = document.createElement("div");
+    coin.className = "troll-coin";
+    coin.textContent = val;
+    coin.onclick = () => {
+      if (selectedIndices.has(idx)) { selectedIndices.delete(idx); coin.classList.remove("selected"); }
+      else { selectedIndices.add(idx); coin.classList.add("selected"); }
+      updateTrollSum();
+    };
+    coinsRow.appendChild(coin);
+  });
+
+  function updateTrollSum() {
+    const sum = [...selectedIndices].reduce((acc, i) => acc + state.collectedCoins[i], 0);
+    const sumEl = document.getElementById("troll-sum");
+    sumEl.style.color = sum === state.target ? "#4ade80" : sum > state.target ? "#f87171" : "#fbbf24";
+    sumEl.textContent = sum > 0 ? `Twoja suma: ${[...selectedIndices].map(i=>state.collectedCoins[i]).join(" + ")} = ${sum}` : "";
+    document.getElementById("troll-result").textContent = "";
+  }
+
+  document.getElementById("troll-reset").onclick = () => {
+    selectedIndices.clear();
+    coinsRow.querySelectorAll(".troll-coin").forEach(c => c.classList.remove("selected"));
+    updateTrollSum();
+  };
+
+  document.getElementById("troll-submit").onclick = () => {
+    const sum = [...selectedIndices].reduce((acc, i) => acc + state.collectedCoins[i], 0);
+    const resultEl = document.getElementById("troll-result");
+    if (sum === state.target) {
+      resultEl.style.color = "#4ade80";
+      resultEl.textContent = "✅ Brawo! Troll cię przepuszcza!";
+      state.score += 50;
+      spawnParticles(troll.x, troll.y, "#4ade80", 20);
+      setTimeout(() => { modal.classList.remove("active"); state.paused = false; winLevel(); }, 1200);
+    } else if (sum > state.target) {
+      resultEl.style.color = "#f87171";
+      resultEl.textContent = `❌ Za dużo! ${sum} > ${state.target}`;
+      state.lives--; updateUI();
+      if (state.lives <= 0) setTimeout(() => { modal.classList.remove("active"); gameOver(); }, 800);
+    } else {
+      resultEl.style.color = "#fbbf24";
+      resultEl.textContent = `🤔 Za mało! ${sum} < ${state.target}`;
+    }
+  };
+
+  updateTrollSum();
+
+  if (state.collectedCoins.length === 0) {
+    document.getElementById("troll-sum").textContent = "Nie masz monet! Wróć i zbierz!";
+    document.getElementById("troll-sum").style.color = "#f87171";
+    setTimeout(() => { modal.classList.remove("active"); state.paused = false; state.trollReached = false; player.x -= 150; }, 2000);
+  }
+}
+
+function winLevel() {
+  state.gameRunning = false;
+  const overlay = document.getElementById("screen-overlay");
+  overlay.classList.remove("hidden");
+  const starsCount = state.lives === 3 ? 3 : state.lives === 2 ? 2 : 1;
+  const starsStr = "⭐".repeat(starsCount) + "☆".repeat(3-starsCount);
+  state.level++;
+  const nextCfg = getConfig();
+  overlay.innerHTML = `
+    <div class="big-icon">💰🧌</div>
+    <div class="stars">${starsStr}</div>
+    <h1>Skarbiec otwarty!</h1>
+    <div class="subtitle">Zdobyto ${state.score} punktów</div>
+    <div id="level-info">Następny: Poziom ${state.level} — Cel: suma do ${nextCfg.targetMax}</div>
+    <button class="start-btn" id="start-btn">⛏️ Następna jaskinia!</button>
+    <button class="btn-back" onclick="goBack()">← Wróć do menu</button>
+  `;
+  document.getElementById("start-btn").onclick = startLevel;
+}
+
+function gameOver() {
+  state.gameRunning = false;
+  const overlay = document.getElementById("screen-overlay");
+  overlay.classList.remove("hidden");
+  overlay.innerHTML = `
+    <div class="big-icon">😢</div>
+    <h1>Troll wygrał!</h1>
+    <div class="subtitle">Zdobyto ${state.score} punktów</div>
+    <div id="level-info">Udało się do poziomu ${state.level}</div>
+    <button class="start-btn" id="start-btn">🔄 Spróbuj ponownie</button>
+    <button class="btn-back" onclick="goBack()">← Wróć do menu</button>
+  `;
+  state.level = 1; state.score = 0; state.lives = 3;
+  document.getElementById("start-btn").onclick = startLevel;
+}
+
+function startLevel() {
+  state.lives = 3; state.gameRunning = true; state.paused = false;
+  document.getElementById("screen-overlay").classList.add("hidden");
+  document.getElementById("troll-modal").classList.remove("active");
+  generateLevel();
+}
+
+function updateUI() {
+  document.getElementById("score").textContent = state.score;
+  document.getElementById("lives").textContent = state.lives;
+  document.getElementById("level-num").textContent = state.level;
+  document.getElementById("target-num").textContent = state.target || "?";
+  const coinsDiv = document.getElementById("coins-collected");
+  coinsDiv.innerHTML = "";
+  state.collectedCoins.forEach(val => {
+    const slot = document.createElement("div");
+    slot.className = "coin-slot filled";
+    slot.textContent = val;
+    coinsDiv.appendChild(slot);
+  });
+}
+
+document.getElementById("start-btn").onclick = startLevel;
+
+function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+gameLoop();
+</script>
+</body>
+</html>
