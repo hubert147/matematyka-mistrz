@@ -88,11 +88,13 @@ function PoundNote({ note, onRemove }: { note: NoteState; onRemove: (id: number)
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function BirthdayScreen({ onFinish }: Props) {
-  const [phase, setPhase]         = useState<Phase>('intro')
-  const [total, setTotal]         = useState(0)
-  const [displayTotal, setDisplay]= useState(0)
-  const [notes, setNotes]         = useState<NoteState[]>([])
-  const [bgIndex, setBgIndex]     = useState(0)
+  const [phase, setPhase]           = useState<Phase>('intro')
+  const [exiting, setExiting]       = useState(false)
+  const [entering, setEntering]     = useState(false)
+  const [total, setTotal]           = useState(0)
+  const [displayTotal, setDisplay]  = useState(0)
+  const [notes, setNotes]           = useState<NoteState[]>([])
+  const [bgIndex, setBgIndex]       = useState(0)
   const [showButton, setShowButton] = useState(false)
   const [lettersShown, setLetters]  = useState(0)
   const noteIdRef = useRef(0)
@@ -102,13 +104,6 @@ export function BirthdayScreen({ onFinish }: Props) {
     const iv = setInterval(() => setBgIndex(i => (i + 1) % BG_GRADIENTS.length), 1000)
     return () => clearInterval(iv)
   }, [])
-
-  // Phase 1 → Phase 2 after 1.5s
-  useEffect(() => {
-    if (phase !== 'intro') return
-    const t = setTimeout(() => setPhase('interactive'), 1500)
-    return () => clearTimeout(t)
-  }, [phase])
 
   // Letter-by-letter reveal during intro
   useEffect(() => {
@@ -147,9 +142,29 @@ export function BirthdayScreen({ onFinish }: Props) {
   }, [])
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (phase !== 'interactive') return
     const x = e.clientX
     const y = e.clientY
+
+    // Intro → transition → interactive on click
+    if (phase === 'intro' && !exiting) {
+      confetti({
+        particleCount: 80,
+        spread: 100,
+        origin: { x: x / window.innerWidth, y: y / window.innerHeight },
+        colors: ['#FFD700', '#FF6B9D', '#C44DFF', '#6BFF8E', '#6BCEFF'],
+        startVelocity: 35,
+      })
+      setExiting(true)
+      setTimeout(() => {
+        setPhase('interactive')
+        setExiting(false)
+        setEntering(true)
+        setTimeout(() => setEntering(false), 600)
+      }, 450)
+      return
+    }
+
+    if (phase !== 'interactive') return
 
     const id = ++noteIdRef.current
     setNotes(prev => [...prev, { id, x, y, floating: false }])
@@ -210,8 +225,16 @@ export function BirthdayScreen({ onFinish }: Props) {
       ))}
 
       {/* ══ PHASE 1: INTRO ══ */}
-      {phase === 'intro' && (
-        <div className="flex flex-col items-center gap-4 z-10 pointer-events-none select-none">
+      {(phase === 'intro' || exiting) && (
+        <div
+          className="flex flex-col items-center gap-4 z-10 pointer-events-none select-none"
+          style={{
+            transition: 'opacity 0.4s ease, transform 0.4s ease, filter 0.4s ease',
+            opacity: exiting ? 0 : 1,
+            transform: exiting ? 'scale(1.3)' : 'scale(1)',
+            filter: exiting ? 'blur(8px)' : 'none',
+          }}
+        >
           <div className="text-[8rem] leading-none drop-shadow-2xl animate-pop-in">🎂</div>
 
           <div className="flex gap-1">
@@ -236,12 +259,28 @@ export function BirthdayScreen({ onFinish }: Props) {
           <p className="text-white font-black text-3xl drop-shadow-lg">
             Dziś masz 7 lat! 🎉
           </p>
+
+          {lettersShown >= 5 && (
+            <p
+              className="text-white/90 font-black text-xl drop-shadow animate-bounce-slow mt-2"
+              style={{ textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
+            >
+              👆 Dotknij ekran!
+            </p>
+          )}
         </div>
       )}
 
       {/* ══ PHASE 2: INTERACTIVE ══ */}
       {phase === 'interactive' && (
-        <div className="flex flex-col items-center gap-5 z-10 select-none">
+        <div
+          className="flex flex-col items-center gap-5 z-10 select-none"
+          style={{
+            transition: 'opacity 0.5s ease, transform 0.5s ease',
+            opacity: entering ? 0 : 1,
+            transform: entering ? 'scale(0.8) translateY(30px)' : 'scale(1) translateY(0)',
+          }}
+        >
 
           {/* Counter */}
           <div
