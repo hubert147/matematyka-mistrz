@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 interface Props {
   onSelectMathQuiz: () => void
   onSelectLiterQuiz: () => void
@@ -5,9 +7,12 @@ interface Props {
   onSelectChat: () => void
   onSelectStudy: () => void
   onSelectLiterMistrz?: () => void
+  onSelectPaniSowa?: () => void
 }
 
-export function MainScreen({ onSelectMathQuiz, onSelectLiterQuiz, onSelectTutor, onSelectChat, onSelectStudy, onSelectLiterMistrz }: Props) {
+export function MainScreen({ onSelectMathQuiz, onSelectLiterQuiz, onSelectTutor, onSelectChat, onSelectStudy, onSelectLiterMistrz, onSelectPaniSowa }: Props) {
+  const [showGry, setShowGry] = useState(false)
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-100 via-blue-50 to-indigo-100 flex flex-col items-center px-4 pt-8 pb-6">
 
@@ -56,16 +61,52 @@ export function MainScreen({ onSelectMathQuiz, onSelectLiterQuiz, onSelectTutor,
           <span className="text-[0.65rem] font-bold text-green-100 uppercase tracking-wide">Ćwiczenia</span>
         </button>
 
-        {/* GRY */}
-        <button
-          onClick={onSelectLiterMistrz}
-          className="flex flex-col items-center justify-center gap-2 p-5 rounded-[1.75rem] shadow-lg active:scale-95 transition-transform duration-100"
-          style={{ background: 'linear-gradient(135deg, #fb923c, #ea580c)' }}
-        >
-          <span className="text-[3.5rem] leading-none drop-shadow">🎮</span>
-          <span className="text-lg font-black text-white tracking-tight">Gry</span>
-          <span className="text-[0.65rem] font-bold text-orange-100 uppercase tracking-wide">LiterMistrz 🦉</span>
-        </button>
+        {/* GRY — submenu */}
+        <div className="relative">
+          <button
+            onClick={() => setShowGry(v => !v)}
+            className={`w-full flex flex-col items-center justify-center gap-2 p-5 rounded-[1.75rem] shadow-lg active:scale-95 transition-all duration-100 ${showGry ? 'scale-95 ring-4 ring-white/40' : ''}`}
+            style={{ background: 'linear-gradient(135deg, #fb923c, #ea580c)' }}
+          >
+            <span className="text-[3.5rem] leading-none drop-shadow">🎮</span>
+            <span className="text-lg font-black text-white tracking-tight">Gry</span>
+            <span className="text-[0.65rem] font-bold text-orange-100 uppercase tracking-wide">{showGry ? '▲ Zamknij' : '▼ Wybierz grę'}</span>
+          </button>
+
+          {showGry && (
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-56 bg-white rounded-2xl shadow-2xl border-2 border-orange-200 overflow-hidden z-50"
+              style={{ animation: 'fadeInUp 0.2s ease' }}
+            >
+              <style>{`@keyframes fadeInUp { from { opacity:0; transform: translateX(-50%) translateY(8px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }`}</style>
+
+              {onSelectLiterMistrz && (
+                <button
+                  onClick={() => { setShowGry(false); onSelectLiterMistrz() }}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 active:bg-orange-100 transition-colors border-b border-orange-100"
+                >
+                  <span className="text-3xl">🦉</span>
+                  <div className="text-left">
+                    <div className="font-black text-gray-800 text-sm">LiterMistrz</div>
+                    <div className="text-[0.6rem] text-gray-400 font-bold uppercase">Słuchaj i dotykaj liter</div>
+                  </div>
+                </button>
+              )}
+
+              {onSelectPaniSowa && (
+                <button
+                  onClick={() => { setShowGry(false); onSelectPaniSowa() }}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 active:bg-orange-100 transition-colors"
+                >
+                  <span className="text-3xl">🌲</span>
+                  <div className="text-left">
+                    <div className="font-black text-gray-800 text-sm">Przygody Sowy</div>
+                    <div className="text-[0.6rem] text-gray-400 font-bold uppercase">Platformówka</div>
+                  </div>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
 
       </div>
 
