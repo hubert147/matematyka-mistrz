@@ -13,7 +13,6 @@ import { LiterQuizScreen } from './screens/liter/LiterQuizScreen'
 import { LiterResultsScreen } from './screens/liter/LiterResultsScreen'
 import { LiterStudySelectScreen } from './screens/liter/LiterStudySelectScreen'
 import { LiterMistrzGame } from './games/litermistrz/Game'
-import { BirthdayScreen } from './screens/BirthdayScreen'
 import { PaniSowaGame } from './games/panisowa/Game'
 
 import { generateQuestions, generateReview, generateLiterReview } from './lib/claude'
@@ -23,8 +22,7 @@ import { useTimer } from './hooks/useTimer'
 import { useHistory } from './hooks/useHistory'
 
 export default function App() {
-  const isBirthday = new Date().getMonth() === 3 && new Date().getDate() === 7
-  const [screen, setScreen] = useState<'main' | 'start' | 'loading_q' | 'quiz' | 'loading_r' | 'results' | 'tutor' | 'chat' | 'liter_start' | 'liter_quiz' | 'liter_results' | 'liter_loading_r' | 'liter_study_select' | 'litermistrz_game' | 'panisowa_game' | 'birthday'>(() => isBirthday ? 'birthday' : 'main')
+  const [screen, setScreen] = useState<'main' | 'start' | 'loading_q' | 'quiz' | 'loading_r' | 'results' | 'tutor' | 'chat' | 'liter_start' | 'liter_quiz' | 'liter_results' | 'liter_loading_r' | 'liter_study_select' | 'litermistrz_game' | 'panisowa_game'>('main')
   const [level, setLevel] = useState<Level>('easy')
   const [literLevel, setLiterLevel] = useState<LiterLevel>('easy')
   const [focusType, setFocusType] = useState<TaskType | undefined>()
@@ -145,7 +143,6 @@ export default function App() {
         />
       )}
       
-      {screen === 'birthday' && <BirthdayScreen onFinish={goToMain} />}
       {screen === 'chat' && <ChatScreen onBack={goToMain} />}
       {screen === 'tutor' && <TutorScreen onBack={goToMain} />}
       
