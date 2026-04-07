@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Sowa DJ — majasieuczy.pl</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@400;600;700;800&display=swap');
@@ -111,8 +111,10 @@
     position: absolute;
     bottom: 0;
     left: 0; right: 0;
-    height: 100px;
+    height: calc(100px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     display: flex;
+    align-items: flex-start;
     pointer-events: auto;
   }
 
@@ -255,7 +257,7 @@
 
   #back-corner {
     position: fixed;
-    bottom: 110px;
+    bottom: calc(110px + env(safe-area-inset-bottom, 0px));
     right: 12px;
     z-index: 20;
     pointer-events: auto;
@@ -505,13 +507,17 @@ let W, H, LANE_W, HIT_Y;
 
 function resize() {
   canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  canvas.height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   W = canvas.width;
   H = canvas.height;
   LANE_W = W / 3;
-  HIT_Y = H - 110;
+  // HIT_Y = top of tap-zones (100px tall, safe area padding handled by CSS)
+  const tapEl = document.getElementById('tap-zones');
+  const tapH = tapEl ? tapEl.offsetHeight : 100;
+  HIT_Y = H - tapH - 10;
 }
 window.addEventListener("resize", resize);
+if (window.visualViewport) window.visualViewport.addEventListener("resize", resize);
 resize();
 
 // ============================================================

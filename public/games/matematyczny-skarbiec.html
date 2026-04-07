@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Matematyczny Skarbiec — majasieuczy.pl</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@400;600;700;800&display=swap');
@@ -121,7 +121,7 @@
 
   #touch-controls {
     position: absolute;
-    bottom: 20px;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
     left: 0; right: 0;
     display: flex;
     justify-content: space-between;
@@ -359,8 +359,9 @@ const state = {
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+function resize() { canvas.width = window.innerWidth; canvas.height = window.visualViewport ? window.visualViewport.height : window.innerHeight; }
 window.addEventListener("resize", resize);
+if (window.visualViewport) window.visualViewport.addEventListener("resize", resize);
 resize();
 
 // ── FIX: inicjalizuj jako puste tablice żeby draw() nie crashował przed startLevel ──

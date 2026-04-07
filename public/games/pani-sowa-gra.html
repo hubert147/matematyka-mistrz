@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>🦉 Przygody Pani Sowy — majasieuczy.pl</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@700;800&display=swap');
@@ -208,7 +208,7 @@
   /* MOBILE CONTROLS */
   #controls {
     position: fixed;
-    bottom: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
     left: 14px; right: 14px;
     display: flex;
     justify-content: space-between;
@@ -298,9 +298,10 @@ function goBack() {
 const C = document.getElementById('game');
 const X = C.getContext('2d');
 
-function resize() { C.width = innerWidth; C.height = innerHeight; }
+function resize() { C.width = innerWidth; C.height = window.visualViewport ? window.visualViewport.height : innerHeight; }
 resize();
 addEventListener('resize', resize);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
 
 const G = 0.55, JF = -12, MS = 4.5, T = 48;
 let state = 'start', score = 0, lives = 3, wIdx = 0, collected = [],
