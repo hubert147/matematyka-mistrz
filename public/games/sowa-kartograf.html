@@ -360,7 +360,7 @@
   <div class="big-icon">🦉🗺️</div>
   <h1>Sowa Kartograf</h1>
   <div class="subtitle">Zaprogramuj sowę żeby dotarła do celu!<br>Ułóż komendy i kliknij ▶</div>
-  <div id="level-info">Poziom 1</div>
+  <div id="level-info">🎲 Losowe plansze co grę!</div>
   <button class="start-btn" id="start-btn">🗺️ Start!</button>
   <button class="back-overlay-btn" id="back-overlay-btn">← Wróć do menu</button>
 </div>
@@ -415,28 +415,91 @@ document.getElementById('btn-back').onclick = goBack;
 document.getElementById('back-overlay-btn').onclick = goBack;
 
 // ============================================================
-// LEVELS
+// LEVELS — 2 stałe tutoriale + losowe generowane przy starcie
 // ============================================================
-const LEVELS = [
+const TUTORIAL_LEVELS = [
   { gridW:5, gridH:4, start:[0,1], goal:[3,1], trees:[], maxSteps:4, loops:false,
     gems:[[1,1],[2,1]], hint:"Idź w prawo 3 razy!" },
   { gridW:5, gridH:4, start:[0,2], goal:[2,0], trees:[], maxSteps:5, loops:false,
     gems:[[1,2],[2,2],[2,1]], hint:"Prawo, prawo, potem w górę!" },
-  { gridW:5, gridH:5, start:[0,2], goal:[4,2], trees:[[2,2],[2,1]], maxSteps:8, loops:false,
-    gems:[[1,2],[3,2],[2,3]], hint:"Omiń drzewa!" },
-  { gridW:5, gridH:5, start:[0,0], goal:[4,4], trees:[[1,0],[1,1],[3,3],[3,4],[2,2]], maxSteps:10, loops:false,
-    gems:[[0,1],[0,2],[1,3],[2,4]], hint:"Znajdź drogę przez las!" },
-  { gridW:6, gridH:4, start:[0,1], goal:[5,1], trees:[], maxSteps:4, loops:true,
-    gems:[[1,1],[2,1],[3,1],[4,1]], hint:"Użyj pętli! 🔁 Powtórz krok w prawo." },
-  { gridW:6, gridH:5, start:[0,3], goal:[5,0], trees:[[2,1],[3,2],[4,3]], maxSteps:6, loops:true,
-    gems:[[1,3],[1,2],[2,2],[3,1],[4,1],[5,1]], hint:"Pętla + skręt = mniej kroków!" },
-  { gridW:7, gridH:6, start:[0,5], goal:[6,0], trees:[[1,4],[2,3],[3,2],[4,1],[3,4],[5,3]], maxSteps:8, loops:true,
-    gems:[[0,4],[1,3],[2,2],[3,1],[4,0],[5,0]], hint:"Zaplanuj trasę schodami!" },
-  { gridW:7, gridH:7, start:[0,6], goal:[6,0],
-    trees:[[1,5],[2,5],[2,4],[3,3],[4,3],[4,2],[5,1],[1,1],[3,5],[5,4]],
-    maxSteps:10, loops:true,
-    gems:[[0,5],[1,4],[1,3],[2,3],[3,2],[4,1],[5,0],[6,1]], hint:"Labirynt! Zaplanuj uważnie!" },
 ];
+
+let LEVELS = [];
+
+// Losowy spacer DFS od start do goal — zawsze znajdzie ścieżkę
+function randomWalk(start, goal, gridW, gridH) {
+  const visited = new Set([`${start[0]},${start[1]}`]);
+  const path = [[...start]];
+  function dfs(x, y) {
+    if (x === goal[0] && y === goal[1]) return true;
+    const dirs = [[1,0],[0,1],[-1,0],[0,-1]];
+    dirs.sort((a, b) => {
+      const da = Math.abs(x+a[0]-goal[0]) + Math.abs(y+a[1]-goal[1]);
+      const db = Math.abs(x+b[0]-goal[0]) + Math.abs(y+b[1]-goal[1]);
+      return (da - db) * 0.5 + (Math.random() - 0.5) * 3;
+    });
+    for (const [dx, dy] of dirs) {
+      const nx = x+dx, ny = y+dy, key = `${nx},${ny}`;
+      if (nx>=0 && nx<gridW && ny>=0 && ny<gridH && !visited.has(key)) {
+        visited.add(key); path.push([nx, ny]);
+        if (dfs(nx, ny)) return true;
+        path.pop(); visited.delete(key);
+      }
+    }
+    return false;
+  }
+  if (!dfs(start[0], start[1])) {
+    // awaryjnie: L-kształt (zawsze możliwy)
+    const p = [[...start]];
+    for (let x=start[0]+1; x<=goal[0]; x++) p.push([x, start[1]]);
+    for (let y=start[1]+1; y<=goal[1]; y++) p.push([goal[0], y]);
+    return p;
+  }
+  return path;
+}
+
+function generateProceduralLevel(levelNum) {
+  // levelNum 0-based; pierwsze proceduralne to levelNum=2
+  const d = levelNum; // trudność
+  const gridW = Math.min(5 + Math.floor(d/2), 8);
+  const gridH = Math.min(4 + Math.floor(d/2), 7);
+  const start = [0, 0];
+  const goal  = [gridW-1, gridH-1];
+
+  const path = randomWalk(start, goal, gridW, gridH);
+  const pathSet = new Set(path.map(([x,y]) => `${x},${y}`));
+
+  // komórki bez ścieżki → możliwe drzewa
+  const freeCells = [];
+  for (let y=0; y<gridH; y++)
+    for (let x=0; x<gridW; x++)
+      if (!pathSet.has(`${x},${y}`)) freeCells.push([x,y]);
+  freeCells.sort(() => Math.random()-0.5);
+
+  const treeCount = Math.min(2 + d, Math.floor(freeCells.length * 0.4));
+  const trees = freeCells.slice(0, treeCount);
+
+  // klejnoty na środkowych komórkach ścieżki
+  const pathMid = path.slice(1, -1).sort(() => Math.random()-0.5);
+  const gems = pathMid.slice(0, Math.min(4, pathMid.length));
+
+  const slack = Math.max(1, 5 - Math.floor(d/3));
+  const maxSteps = (path.length-1) + slack;
+  const loops = d >= 3;
+
+  const hints = [
+    "Omiń drzewa!", "Znajdź drogę!", "Planuj trasę!",
+    "Zbieraj gwiazdy!", "Użyj pętli! 🔁", "Myśl uważnie!",
+    "Krótka droga = więcej punktów!", "Labirynt!",
+  ];
+  return { gridW, gridH, start, goal, trees, maxSteps, loops, gems,
+           hint: hints[d % hints.length] };
+}
+
+function generateAllLevels() {
+  LEVELS = [...TUTORIAL_LEVELS];
+  for (let i=2; i<10; i++) LEVELS.push(generateProceduralLevel(i));
+}
 
 // ============================================================
 // STATE
@@ -924,6 +987,7 @@ function winGame() {
     <button class="back-overlay-btn" id="back-overlay-btn2">← Wróć do menu</button>
   `;
   document.getElementById("start-btn").onclick = () => {
+    generateAllLevels();
     state.level = 0; state.score = 0;
     overlay.classList.add("hidden");
     document.getElementById("app").style.display = "flex";
@@ -949,6 +1013,8 @@ document.getElementById("controls").addEventListener("click", e => {
 // INIT
 // ============================================================
 document.getElementById("start-btn").onclick = () => {
+  generateAllLevels();
+  state.level = 0; state.score = 0;
   document.getElementById("screen-overlay").classList.add("hidden");
   document.getElementById("app").style.display = "flex";
   loadLevel();
