@@ -173,16 +173,16 @@
 
   #sequence-area {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
     gap: 4px;
     min-height: 50px;
+    max-height: 110px;
     padding: 5px 10px;
     background: rgba(255,255,255,0.03);
     border: 2px dashed rgba(255,255,255,0.08);
     border-radius: 14px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
   }
 
   #sequence-area:empty::after {
@@ -706,7 +706,7 @@ function renderSequence() {
   const lvl = LEVELS[Math.min(state.level, LEVELS.length-1)];
   document.getElementById("steps-info").textContent = `Użyto kroków: ${countSteps()} / ${lvl.maxSteps}`;
 
-  area.scrollLeft = area.scrollWidth;
+  area.scrollTop = area.scrollHeight;
 }
 
 // ============================================================
