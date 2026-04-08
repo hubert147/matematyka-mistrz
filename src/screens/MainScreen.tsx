@@ -66,119 +66,45 @@ export function MainScreen({ onSelectMathQuiz, onSelectLiterQuiz, onSelectTutor,
           <span className="text-[0.65rem] font-bold text-green-100 uppercase tracking-wide">Ćwiczenia</span>
         </button>
 
-        {/* GRY — submenu */}
-        <div className="relative">
-          <button
-            onClick={() => setShowGry(v => !v)}
-            className={`w-full flex flex-col items-center justify-center gap-2 p-5 rounded-[1.75rem] shadow-lg active:scale-95 transition-all duration-100 ${showGry ? 'scale-95 ring-4 ring-white/40' : ''}`}
-            style={{ background: 'linear-gradient(135deg, #fb923c, #ea580c)' }}
-          >
-            <span className="text-[3.5rem] leading-none drop-shadow">🎮</span>
-            <span className="text-lg font-black text-white tracking-tight">Gry</span>
-            <span className="text-[0.65rem] font-bold text-orange-100 uppercase tracking-wide">{showGry ? '▲ Zamknij' : '▼ Wybierz grę'}</span>
-          </button>
-
-          {showGry && (
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-56 bg-white rounded-2xl shadow-2xl border-2 border-orange-200 z-50 overflow-y-auto"
-              style={{ animation: 'fadeInUp 0.2s ease', maxHeight: 'calc(100dvh - 200px)' }}
-            >
-              <style>{`@keyframes fadeInUp { from { opacity:0; transform: translateX(-50%) translateY(8px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }`}</style>
-
-              {onSelectLiterMistrz && (
-                <button
-                  onClick={() => { setShowGry(false); onSelectLiterMistrz() }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 active:bg-orange-100 transition-colors border-b border-orange-100"
-                >
-                  <span className="text-3xl">🦉</span>
-                  <div className="text-left">
-                    <div className="font-black text-gray-800 text-sm">LiterMistrz</div>
-                    <div className="text-[0.6rem] text-gray-400 font-bold uppercase">Słuchaj i dotykaj liter</div>
-                  </div>
-                </button>
-              )}
-
-              {onSelectPaniSowa && (
-                <button
-                  onClick={() => { setShowGry(false); onSelectPaniSowa() }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 active:bg-orange-100 transition-colors border-b border-orange-100"
-                >
-                  <span className="text-3xl">🌲</span>
-                  <div className="text-left">
-                    <div className="font-black text-gray-800 text-sm">Przygody Sowy</div>
-                    <div className="text-[0.6rem] text-gray-400 font-bold uppercase">Platformówka</div>
-                  </div>
-                </button>
-              )}
-
-              {onSelectSkarbiec && (
-                <button
-                  onClick={() => { setShowGry(false); onSelectSkarbiec() }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 active:bg-orange-100 transition-colors border-b border-orange-100"
-                >
-                  <span className="text-3xl">💰</span>
-                  <div className="text-left">
-                    <div className="font-black text-gray-800 text-sm">Skarbiec Trolla</div>
-                    <div className="text-[0.6rem] text-gray-400 font-bold uppercase">Matematyka</div>
-                  </div>
-                </button>
-              )}
-
-              {onSelectLabirynt && (
-                <button
-                  onClick={() => { setShowGry(false); onSelectLabirynt() }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 active:bg-orange-100 transition-colors border-b border-orange-100"
-                >
-                  <span className="text-3xl">🌑</span>
-                  <div className="text-left">
-                    <div className="font-black text-gray-800 text-sm">Sowa w Labiryncie</div>
-                    <div className="text-[0.6rem] text-gray-400 font-bold uppercase">Mgła i literki</div>
-                  </div>
-                </button>
-              )}
-
-              {onSelectSowaDJ && (
-                <button
-                  onClick={() => { setShowGry(false); onSelectSowaDJ() }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 active:bg-orange-100 transition-colors border-b border-orange-100"
-                >
-                  <span className="text-3xl">🎧</span>
-                  <div className="text-left">
-                    <div className="font-black text-gray-800 text-sm">Sowa DJ</div>
-                    <div className="text-[0.6rem] text-gray-400 font-bold uppercase">Rytm i literki</div>
-                  </div>
-                </button>
-              )}
-
-              {onSelectLaboratorium && (
-                <button
-                  onClick={() => { setShowGry(false); onSelectLaboratorium() }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 active:bg-orange-100 transition-colors border-b border-orange-100"
-                >
-                  <span className="text-3xl">🧪</span>
-                  <div className="text-left">
-                    <div className="font-black text-gray-800 text-sm">Laboratorium</div>
-                    <div className="text-[0.6rem] text-gray-400 font-bold uppercase">Mieszaj kolory</div>
-                  </div>
-                </button>
-              )}
-
-              {onSelectKartograf && (
-                <button
-                  onClick={() => { setShowGry(false); onSelectKartograf() }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 active:bg-orange-100 transition-colors"
-                >
-                  <span className="text-3xl">🗺️</span>
-                  <div className="text-left">
-                    <div className="font-black text-gray-800 text-sm">Sowa Kartograf</div>
-                    <div className="text-[0.6rem] text-gray-400 font-bold uppercase">Programowanie</div>
-                  </div>
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+        {/* GRY — przycisk */}
+        <button
+          onClick={() => setShowGry(v => !v)}
+          className={`flex flex-col items-center justify-center gap-2 p-5 rounded-[1.75rem] shadow-lg active:scale-95 transition-all duration-100 ${showGry ? 'scale-95 ring-4 ring-white/40' : ''}`}
+          style={{ background: 'linear-gradient(135deg, #fb923c, #ea580c)' }}
+        >
+          <span className="text-[3.5rem] leading-none drop-shadow">🎮</span>
+          <span className="text-lg font-black text-white tracking-tight">Gry</span>
+          <span className="text-[0.65rem] font-bold text-orange-100 uppercase tracking-wide">{showGry ? '▲ Zamknij' : '▼ Wybierz grę'}</span>
+        </button>
 
       </div>
+
+      {/* GRY — lista pod siatką */}
+      {showGry && (
+        <div className="w-full max-w-xs mt-3 bg-white rounded-2xl shadow-2xl border-2 border-orange-200 overflow-hidden">
+          {[
+            { show: onSelectLiterMistrz,   icon: '🦉', name: 'LiterMistrz',        sub: 'Słuchaj i dotykaj liter', fn: onSelectLiterMistrz },
+            { show: onSelectPaniSowa,       icon: '🌲', name: 'Przygody Sowy',      sub: 'Platformówka',            fn: onSelectPaniSowa },
+            { show: onSelectSkarbiec,       icon: '💰', name: 'Skarbiec Trolla',    sub: 'Matematyka',              fn: onSelectSkarbiec },
+            { show: onSelectLabirynt,       icon: '🌑', name: 'Sowa w Labiryncie', sub: 'Mgła i literki',          fn: onSelectLabirynt },
+            { show: onSelectSowaDJ,         icon: '🎧', name: 'Sowa DJ',            sub: 'Rytm i literki',          fn: onSelectSowaDJ },
+            { show: onSelectLaboratorium,   icon: '🧪', name: 'Laboratorium',       sub: 'Mieszaj kolory',          fn: onSelectLaboratorium },
+            { show: onSelectKartograf,      icon: '🗺️', name: 'Sowa Kartograf',     sub: 'Programowanie',           fn: onSelectKartograf },
+          ].filter(g => g.show).map((g, i, arr) => (
+            <button
+              key={g.name}
+              onClick={() => { setShowGry(false); g.fn?.() }}
+              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-50 active:bg-orange-100 transition-colors ${i < arr.length - 1 ? 'border-b border-orange-100' : ''}`}
+            >
+              <span className="text-3xl">{g.icon}</span>
+              <div className="text-left">
+                <div className="font-black text-gray-800 text-sm">{g.name}</div>
+                <div className="text-[0.6rem] text-gray-400 font-bold uppercase">{g.sub}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* DODATKI */}
       <div className="w-full max-w-xs mt-4">
