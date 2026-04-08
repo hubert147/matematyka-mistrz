@@ -79,8 +79,8 @@ export function MainScreen({ onSelectMathQuiz, onSelectLiterQuiz, onSelectTutor,
           </button>
 
           {showGry && (
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-56 bg-white rounded-2xl shadow-2xl border-2 border-orange-200 overflow-hidden z-50"
-              style={{ animation: 'fadeInUp 0.2s ease' }}
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-56 bg-white rounded-2xl shadow-2xl border-2 border-orange-200 z-50 overflow-y-auto"
+              style={{ animation: 'fadeInUp 0.2s ease', maxHeight: 'calc(100dvh - 200px)' }}
             >
               <style>{`@keyframes fadeInUp { from { opacity:0; transform: translateX(-50%) translateY(8px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }`}</style>
 
