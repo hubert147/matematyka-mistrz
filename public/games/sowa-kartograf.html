@@ -168,18 +168,6 @@
   .cmd-btn.dir { background: rgba(59,130,246,0.2); border-color: rgba(59,130,246,0.35); }
   .cmd-btn.dir:active { background: rgba(59,130,246,0.45); }
 
-  .cmd-btn.loop {
-    background: rgba(168,85,247,0.2);
-    border-color: rgba(168,85,247,0.35);
-    font-size: 13px;
-    font-family: 'Baloo 2', sans-serif;
-    color: #c084fc;
-    font-weight: 700;
-    width: auto;
-    padding: 0 12px;
-  }
-  .cmd-btn.loop:active { background: rgba(168,85,247,0.45); }
-
   .cmd-btn.action { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.25); }
   .cmd-btn.play { background: linear-gradient(135deg,#10b981,#059669); border-color: rgba(16,185,129,0.4); }
 
@@ -220,31 +208,6 @@
   .seq-block.dir {
     background: rgba(59,130,246,0.25);
     border: 2px solid rgba(59,130,246,0.4);
-  }
-
-  .seq-block.loop-block {
-    background: rgba(168,85,247,0.2);
-    border: 2px solid rgba(168,85,247,0.4);
-    padding: 0 8px;
-    gap: 3px;
-    font-family: 'Baloo 2', sans-serif;
-    font-size: 12px;
-    color: #c084fc;
-    font-weight: 700;
-    min-width: auto;
-  }
-
-  .loop-inner { display: flex; gap: 2px; align-items: center; }
-
-  .seq-mini {
-    width: 26px; height: 26px;
-    border-radius: 6px;
-    background: rgba(59,130,246,0.3);
-    border: 1px solid rgba(59,130,246,0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
   }
 
   .seq-block.active {
@@ -392,8 +355,6 @@
       <div class="cmd-btn dir" data-cmd="right">▶</div>
       <div class="cmd-btn dir" data-cmd="down">▼</div>
       <div class="cmd-btn dir" data-cmd="left">◀</div>
-      <div class="cmd-btn loop" data-cmd="loop2" id="loop-btn-2" style="display:none">2× 🔁</div>
-      <div class="cmd-btn loop" data-cmd="loop3" id="loop-btn-3" style="display:none">3× 🔁</div>
     </div>
     <div id="sequence-area"></div>
     <div id="controls">
@@ -418,9 +379,9 @@ document.getElementById('back-overlay-btn').onclick = goBack;
 // LEVELS — 2 stałe tutoriale + losowe generowane przy starcie
 // ============================================================
 const TUTORIAL_LEVELS = [
-  { gridW:5, gridH:4, start:[0,1], goal:[3,1], trees:[], maxSteps:4, loops:false,
+  { gridW:5, gridH:4, start:[0,1], goal:[3,1], trees:[], maxSteps:4,
     gems:[[1,1],[2,1]], hint:"Idź w prawo 3 razy!" },
-  { gridW:5, gridH:4, start:[0,2], goal:[2,0], trees:[], maxSteps:5, loops:false,
+  { gridW:5, gridH:4, start:[0,2], goal:[2,0], trees:[], maxSteps:5,
     gems:[[1,2],[2,2],[2,1]], hint:"Prawo, prawo, potem w górę!" },
 ];
 
@@ -485,14 +446,13 @@ function generateProceduralLevel(levelNum) {
 
   const slack = Math.max(1, 5 - Math.floor(d/3));
   const maxSteps = (path.length-1) + slack;
-  const loops = d >= 3;
 
   const hints = [
     "Omiń drzewa!", "Znajdź drogę!", "Planuj trasę!",
-    "Zbieraj gwiazdy!", "Użyj pętli! 🔁", "Myśl uważnie!",
+    "Zbieraj gwiazdy!", "Myśl uważnie!",
     "Krótka droga = więcej punktów!", "Labirynt!",
   ];
-  return { gridW, gridH, start, goal, trees, maxSteps, loops, gems,
+  return { gridW, gridH, start, goal, trees, maxSteps, gems,
            hint: hints[d % hints.length] };
 }
 
@@ -512,7 +472,6 @@ const state = {
   owlAnimX: 0, owlAnimY: 0,
   owlFacing: 1,
   collectedGems: new Set(),
-  loopMode: false, loopCount: 0, loopCommands: [],
   trail: [],
 };
 
@@ -530,11 +489,8 @@ function loadLevel() {
   state.owlAnimX = lvl.start[0]; state.owlAnimY = lvl.start[1];
   state.owlFacing = 1;
   state.collectedGems = new Set();
-  state.loopMode = false; state.loopCommands = [];
   state.trail = [{ x: lvl.start[0], y: lvl.start[1] }];
 
-  document.getElementById("loop-btn-2").style.display = lvl.loops ? "flex" : "none";
-  document.getElementById("loop-btn-3").style.display = lvl.loops ? "flex" : "none";
   document.getElementById("level-num").textContent = state.level + 1;
   document.getElementById("max-steps").textContent = lvl.maxSteps;
   document.getElementById("score").textContent = state.score;
@@ -708,33 +664,19 @@ function addCommand(cmd) {
   const lvl = LEVELS[Math.min(state.level, LEVELS.length - 1)];
 
   if (cmd === "undo") {
-    if (state.loopMode) state.loopCommands.pop();
-    else state.sequence.pop();
+    state.sequence.pop();
     renderSequence(); return;
   }
   if (cmd === "clear") {
-    state.sequence = []; state.loopMode = false; state.loopCommands = [];
+    state.sequence = [];
     renderSequence(); return;
   }
   if (cmd === "play") {
-    if (!state.loopMode) executeSequence(); return;
+    executeSequence(); return;
   }
 
-  if (cmd === "loop2" || cmd === "loop3") {
-    if (state.loopMode) {
-      if (state.loopCommands.length > 0)
-        state.sequence.push({ type:"loop", count:state.loopCount, commands:[...state.loopCommands] });
-      state.loopMode = false; state.loopCommands = [];
-    } else {
-      state.loopMode = true; state.loopCount = cmd === "loop2" ? 2 : 3; state.loopCommands = [];
-    }
-    renderSequence(); return;
-  }
-
-  if (countSteps() >= lvl.maxSteps && !state.loopMode) return;
-  const entry = { type:"dir", dir:cmd };
-  if (state.loopMode) state.loopCommands.push(entry);
-  else state.sequence.push(entry);
+  if (countSteps() >= lvl.maxSteps) return;
+  state.sequence.push({ type:"dir", dir:cmd });
   renderSequence();
 }
 
@@ -753,64 +695,16 @@ function renderSequence() {
 
   for (let i = 0; i < state.sequence.length; i++) {
     const s = state.sequence[i];
-    if (s.type === "dir") {
-      const block = document.createElement("div");
-      block.className = "seq-block dir";
-      block.textContent = arrowMap[s.dir];
-      block.dataset.index = i;
-      block.onclick = () => { if (!state.executing) { state.sequence.splice(i,1); renderSequence(); } };
-      area.appendChild(block);
-    } else if (s.type === "loop") {
-      const block = document.createElement("div");
-      block.className = "seq-block loop-block";
-      block.dataset.index = i;
-      block.textContent = `${s.count}× `;
-      const innerDiv = document.createElement("span");
-      innerDiv.className = "loop-inner";
-      for (const c of s.commands) {
-        const mini = document.createElement("span");
-        mini.className = "seq-mini";
-        mini.textContent = arrowMap[c.dir];
-        innerDiv.appendChild(mini);
-      }
-      block.appendChild(innerDiv);
-      block.onclick = () => { if (!state.executing) { state.sequence.splice(i,1); renderSequence(); } };
-      area.appendChild(block);
-    }
-  }
-
-  if (state.loopMode) {
-    const loopIndicator = document.createElement("div");
-    loopIndicator.className = "seq-block loop-block";
-    loopIndicator.style.borderStyle = "dashed";
-    loopIndicator.textContent = `${state.loopCount}× `;
-    const innerDiv = document.createElement("span");
-    innerDiv.className = "loop-inner";
-    for (const c of state.loopCommands) {
-      const mini = document.createElement("span");
-      mini.className = "seq-mini";
-      mini.textContent = arrowMap[c.dir];
-      innerDiv.appendChild(mini);
-    }
-    loopIndicator.appendChild(innerDiv);
-    const doneBtn = document.createElement("span");
-    doneBtn.textContent = " ✓";
-    doneBtn.style.cursor = "pointer";
-    doneBtn.onclick = (e) => {
-      e.stopPropagation();
-      if (state.loopCommands.length > 0)
-        state.sequence.push({ type:"loop", count:state.loopCount, commands:[...state.loopCommands] });
-      state.loopMode = false; state.loopCommands = [];
-      renderSequence();
-    };
-    loopIndicator.appendChild(doneBtn);
-    area.appendChild(loopIndicator);
+    const block = document.createElement("div");
+    block.className = "seq-block dir";
+    block.textContent = arrowMap[s.dir];
+    block.dataset.index = i;
+    block.onclick = () => { if (!state.executing) { state.sequence.splice(i,1); renderSequence(); } };
+    area.appendChild(block);
   }
 
   const lvl = LEVELS[Math.min(state.level, LEVELS.length-1)];
-  document.getElementById("steps-info").textContent = state.loopMode
-    ? `🔁 Budowanie pętli ×${state.loopCount} — dodaj komendy i kliknij ✓`
-    : `Użyto kroków: ${countSteps()} / ${lvl.maxSteps}`;
+  document.getElementById("steps-info").textContent = `Użyto kroków: ${countSteps()} / ${lvl.maxSteps}`;
 
   area.scrollLeft = area.scrollWidth;
 }
@@ -823,16 +717,7 @@ async function executeSequence() {
   state.executing = true;
   const lvl = LEVELS[Math.min(state.level, LEVELS.length - 1)];
 
-  // Flatten loops
-  const expanded = [], blockRefs = [];
-  for (let i = 0; i < state.sequence.length; i++) {
-    const s = state.sequence[i];
-    if (s.type === "dir") { expanded.push(s); blockRefs.push(i); }
-    else if (s.type === "loop") {
-      for (let r = 0; r < s.count; r++)
-        for (const c of s.commands) { expanded.push(c); blockRefs.push(i); }
-    }
-  }
+  const expanded = state.sequence, blockRefs = state.sequence.map((_,i) => i);
 
   // Reset to start
   state.owlX = lvl.start[0]; state.owlY = lvl.start[1];

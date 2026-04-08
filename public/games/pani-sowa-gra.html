@@ -372,7 +372,14 @@ function genLevel(wd) {
     enemies.push({x:ex, y:C.height-T-50, w:44, h:44, alive:true, q:qs[i],
       ps:ex-40, pe:ex+40, pd:1, bo:Math.random()*Math.PI*2});
   }
-  owl.x=80; owl.y=C.height-T-60; owl.vx=0; owl.vy=0; camX=0;
+  const corners = [
+    [80,          C.height-T-60, 0],
+    [tw-120,      C.height-T-60, Math.max(0, tw-120 - C.width*0.35)],
+    [80,          C.height*0.32, 0],
+    [tw-120,      C.height*0.32, Math.max(0, tw-120 - C.width*0.35)],
+  ];
+  const [sx, sy, sc] = corners[Math.floor(Math.random()*corners.length)];
+  owl.x=sx; owl.y=sy; owl.vx=0; owl.vy=0; camX=sc;
 }
 
 function spawn(x, y, col, n) {
