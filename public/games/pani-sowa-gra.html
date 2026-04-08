@@ -358,28 +358,30 @@ addEventListener('keyup', e => K[e.code] = false);
 function genLevel(wd) {
   platforms=[]; letters=[]; enemies=[]; collected=[];
   const w = wd.word, tw = (w.length+2)*400;
+  const rtl = Math.random() < 0.5; // losowo: lewa lub prawa strona
   for (let x=0; x<tw; x+=T) platforms.push({x, y:C.height-T, w:T, h:T, t:'g'});
   for (let i=0; i<w.length; i++) {
-    const bx = 250+i*400, by = C.height-180-Math.random()*120;
+    const bx = rtl ? (tw - 250 - i*400) : (250 + i*400);
+    const by = C.height-180-Math.random()*120;
     platforms.push({x:bx-30, y:by, w:120, h:20, t:'c'});
-    platforms.push({x:bx-150, y:by+40+Math.random()*60, w:100, h:20, t:'b'});
-    if (Math.random()>0.5) platforms.push({x:bx+80, y:by-60-Math.random()*40, w:80, h:20, t:'c'});
+    platforms.push({x:rtl ? bx+30 : bx-150, y:by+40+Math.random()*60, w:100, h:20, t:'b'});
+    if (Math.random()>0.5) platforms.push({x:rtl ? bx-110 : bx+80, y:by-60-Math.random()*40, w:80, h:20, t:'c'});
     letters.push({x:bx, y:by-50, ch:w[i], idx:i, got:false, bo:Math.random()*Math.PI*2});
   }
   const qs = wd.questions;
   for (let i=0; i<Math.min(qs.length, w.length-1); i++) {
-    const ex = 250+(i+0.5)*400;
+    const ex = rtl ? (tw - 250 - (i+0.5)*400) : (250 + (i+0.5)*400);
     enemies.push({x:ex, y:C.height-T-50, w:44, h:44, alive:true, q:qs[i],
       ps:ex-40, pe:ex+40, pd:1, bo:Math.random()*Math.PI*2});
   }
-  const corners = [
-    [80,          C.height-T-60, 0],
-    [tw-120,      C.height-T-60, Math.max(0, tw-120 - C.width*0.35)],
-    [80,          C.height*0.32, 0],
-    [tw-120,      C.height*0.32, Math.max(0, tw-120 - C.width*0.35)],
-  ];
-  const [sx, sy, sc] = corners[Math.floor(Math.random()*corners.length)];
-  owl.x=sx; owl.y=sy; owl.vx=0; owl.vy=0; camX=sc;
+  if (rtl) {
+    owl.x=tw-80; owl.y=C.height-T-60; owl.dir=-1;
+    camX=Math.max(0, tw-80 - C.width*0.65);
+  } else {
+    owl.x=80; owl.y=C.height-T-60; owl.dir=1;
+    camX=0;
+  }
+  owl.vx=0; owl.vy=0;
 }
 
 function spawn(x, y, col, n) {
