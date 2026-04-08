@@ -359,7 +359,7 @@
   <div class="big-icon">🦉🧪</div>
   <h1>Laboratorium Pani Sowy</h1>
   <div class="subtitle">Mieszaj kolory w magicznej kolbie!<br>Użyj suwaków żeby stworzyć kolor z karty.</div>
-  <div id="level-info">Poziom 1 — Proste kolory</div>
+  <div id="level-info">🎲 Losowe kolory każda gra!</div>
   <button class="start-btn" id="start-btn">🧪 Do laboratorium!</button>
   <button class="back-overlay-btn" id="back-overlay-btn">← Wróć do menu</button>
 </div>
@@ -443,42 +443,56 @@ document.getElementById('btn-back').onclick = goBack;
 document.getElementById('back-overlay-btn').onclick = goBack;
 
 // ============================================================
-// COLOR CHALLENGES
+// COLOR CHALLENGES — losowane przy każdym starcie gry
 // ============================================================
-const COLOR_CHALLENGES = [
-  // Level 1: Simple 2-color mixes
-  [
-    { name: "Pomarańczowy", hint: "🔴 + 🟡", r: 80, y: 80, b: 0, tolerance: 25 },
-    { name: "Zielony",      hint: "🟡 + 🔵", r: 0,  y: 80, b: 80, tolerance: 25 },
-    { name: "Fioletowy",    hint: "🔴 + 🔵", r: 80, y: 0,  b: 80, tolerance: 25 },
-    { name: "Czerwony",     hint: "Tylko 🔴!", r: 90, y: 0, b: 0, tolerance: 20 },
-    { name: "Niebieski",    hint: "Tylko 🔵!", r: 0,  y: 0, b: 90, tolerance: 20 },
+const COLOR_POOL = {
+  easy: [
+    { name:"Czerwony",       hint:"Tylko 🔴!",               r:90, y:0,  b:0  },
+    { name:"Żółty",          hint:"Tylko 🟡!",               r:0,  y:90, b:0  },
+    { name:"Niebieski",      hint:"Tylko 🔵!",               r:0,  y:0,  b:90 },
+    { name:"Pomarańczowy",   hint:"🔴 + 🟡 po równo",       r:80, y:80, b:0  },
+    { name:"Zielony",        hint:"🟡 + 🔵 po równo",       r:0,  y:80, b:80 },
+    { name:"Fioletowy",      hint:"🔴 + 🔵 po równo",       r:80, y:0,  b:80 },
+    { name:"Jasny czerwony", hint:"Dużo 🔴!",                r:70, y:0,  b:0  },
+    { name:"Jasny niebieski",hint:"Dużo 🔵!",                r:0,  y:0,  b:70 },
   ],
-  // Level 2: Varied amounts
-  [
-    { name: "Jasny pomarańcz", hint: "Dużo 🟡, trochę 🔴",           r: 40, y: 90, b: 0,  tolerance: 22 },
-    { name: "Ciemna zieleń",   hint: "Dużo 🔵, trochę 🟡",           r: 0,  y: 40, b: 85, tolerance: 22 },
-    { name: "Różowy",          hint: "Trochę 🔴, mało 🔵",           r: 60, y: 0,  b: 20, tolerance: 22 },
-    { name: "Oliwkowy",        hint: "Dużo 🟡, trochę 🔴, mało 🔵", r: 30, y: 70, b: 20, tolerance: 22 },
-    { name: "Lawendowy",       hint: "🔴 i 🔵, mało 🟡",            r: 50, y: 10, b: 60, tolerance: 22 },
+  medium: [
+    { name:"Różowy",         hint:"Trochę 🔴, mało 🔵",      r:60, y:0,  b:20 },
+    { name:"Jasny pomarańcz",hint:"Dużo 🟡, trochę 🔴",      r:40, y:90, b:0  },
+    { name:"Ciemna zieleń",  hint:"Dużo 🔵, trochę 🟡",      r:0,  y:40, b:85 },
+    { name:"Lawendowy",      hint:"🔴 i 🔵, mało 🟡",        r:50, y:10, b:60 },
+    { name:"Oliwkowy",       hint:"Dużo 🟡, trochę 🔴 i 🔵", r:30, y:70, b:20 },
+    { name:"Turkusowy",      hint:"Dużo 🔵, trochę 🟡",      r:0,  y:50, b:90 },
+    { name:"Malinowy",       hint:"Dużo 🔴, mało 🔵",        r:90, y:0,  b:30 },
+    { name:"Limonkowy",      hint:"Dużo 🟡, odrobina 🔵",    r:10, y:90, b:30 },
+    { name:"Koralowy",       hint:"Dużo 🔴, trochę 🟡",      r:85, y:45, b:0  },
   ],
-  // Level 3: Precise mixing
-  [
-    { name: "Brązowy",    hint: "Wszystkie trzy!",              r: 60, y: 50, b: 40, tolerance: 20 },
-    { name: "Turkusowy",  hint: "Dużo 🔵, trochę 🟡",          r: 0,  y: 50, b: 90, tolerance: 20 },
-    { name: "Malinowy",   hint: "Dużo 🔴, mało 🔵",            r: 90, y: 0,  b: 30, tolerance: 20 },
-    { name: "Khaki",      hint: "🟡 z odrobiną 🔴 i 🔵",      r: 25, y: 65, b: 15, tolerance: 20 },
-    { name: "Szary",      hint: "Wszystkie po równo, mało",    r: 35, y: 35, b: 35, tolerance: 18 },
+  hard: [
+    { name:"Brązowy",        hint:"Wszystkie trzy!",              r:60, y:50, b:40 },
+    { name:"Szary",          hint:"Wszystkie po równo, mało",     r:35, y:35, b:35 },
+    { name:"Khaki",          hint:"Dużo 🟡, odrobina 🔴 i 🔵",   r:25, y:65, b:15 },
+    { name:"Łososiowy",      hint:"Dużo 🔴, trochę 🟡, mało 🔵", r:75, y:35, b:15 },
+    { name:"Morski",         hint:"Dużo 🔵, średnio 🟡",          r:10, y:45, b:80 },
+    { name:"Burgund",        hint:"Dużo 🔴 i 🔵, mało 🟡",       r:80, y:15, b:45 },
+    { name:"Pistacjowy",     hint:"Dużo 🟡, trochę 🔵, mało 🔴", r:15, y:70, b:40 },
+    { name:"Karmelowy",      hint:"Dużo 🔴 i 🟡, trochę 🔵",     r:65, y:60, b:25 },
+    { name:"Bordo",          hint:"Dużo 🔴, mało 🟡, trochę 🔵", r:85, y:20, b:50 },
+    { name:"Perłowy",        hint:"Każdego po trochę, bardzo mało",r:22, y:18, b:18 },
   ],
-  // Level 4: Expert
-  [
-    { name: "Łososiowy",    hint: "🔴 dużo, 🟡 trochę, 🔵 mało",  r: 75, y: 35, b: 15, tolerance: 18 },
-    { name: "Morski",       hint: "🔵 dużo, 🟡 średnio",           r: 10, y: 45, b: 80, tolerance: 18 },
-    { name: "Burgund",      hint: "🔴 dużo, 🔵 średnio, 🟡 mało",  r: 80, y: 15, b: 45, tolerance: 18 },
-    { name: "Pistacjowy",   hint: "🟡 dużo, 🔵 średnio, 🔴 mało",  r: 15, y: 70, b: 40, tolerance: 18 },
-    { name: "Karmelowy",    hint: "🔴 i 🟡 dużo, 🔵 trochę",      r: 65, y: 60, b: 25, tolerance: 18 },
-  ],
-];
+};
+
+function generateColorChallenges() {
+  const pick = (pool, n, tol) =>
+    [...pool].sort(() => Math.random()-0.5).slice(0, n).map(c => ({...c, tolerance: tol}));
+  return [
+    pick(COLOR_POOL.easy,   5, 25), // Poziom 1
+    pick(COLOR_POOL.medium, 5, 22), // Poziom 2
+    pick(COLOR_POOL.hard,   5, 20), // Poziom 3
+    pick(COLOR_POOL.hard,   5, 17), // Poziom 4 — trudniejsza tolerancja
+  ];
+}
+
+let COLOR_CHALLENGES = generateColorChallenges();
 
 // ============================================================
 // RYB → RGB Conversion (subtractive color mixing)
@@ -703,6 +717,7 @@ function nextChallenge() {
 }
 
 function startGame() {
+  COLOR_CHALLENGES = generateColorChallenges(); // nowe losowe kolory każda gra
   state.gameRunning = true;
   state.level = 1; state.score = 0; state.round = 0;
   document.getElementById("screen-overlay").classList.add("hidden");
